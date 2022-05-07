@@ -13,9 +13,9 @@ public class MainFrame extends JFrame implements ActionListener {
 
 
     // Иконки.
-    ImageIcon imSettings = new ImageIcon("src/main/java/icons/settings-sliders-white.png");
-    ImageIcon imStart = new ImageIcon("src/main/java/icons/caret-circle-right-white.png");
-    ImageIcon imStop = new ImageIcon("src/main/java/icons/cross-circle-white.png");
+//    ImageIcon imSettings = new ImageIcon("src/main/java/icons/settings-sliders-white.png");
+//    ImageIcon imStart = new ImageIcon("src/main/java/icons/caret-circle-right-white.png");
+//    ImageIcon imStop = new ImageIcon("src/main/java/icons/cross-circle-white.png");
     static ImageIcon Jigsaw = new ImageIcon("src/main/java/icons/black.png");
     // Игровое поле.
     private Table table;
@@ -104,72 +104,77 @@ public class MainFrame extends JFrame implements ActionListener {
      */
     public void Init() {
         // Задаем внешний вид окну.
-        setIconImage(Jigsaw.getImage());
+        //setIconImage(Jigsaw.getImage());
         setTitle("Jigsaw");
-        setBounds(100, 100, 1200, 800);
+        //setBounds(100, 100, 1200, 800);
         setVisible(true);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        setLayout(new GridBagLayout());
+        //setLayout(new GridBagLayout());
         setMinimumSize(new Dimension(650,450));
 
-        GridBagConstraints constraints = new GridBagConstraints();
-        constraints.fill = GridBagConstraints.BOTH;
-        constraints.anchor = GridBagConstraints.NORTHWEST;
-        constraints.insets = new Insets(5, 5, 0, 0);
+//        GridBagConstraints constraints = new GridBagConstraints();
+//        constraints.fill = GridBagConstraints.BOTH;
+//        constraints.anchor = GridBagConstraints.NORTHWEST;
+//        constraints.insets = new Insets(5, 5, 0, 0);
 
         // Запускаем таймер отсчета игрового времени.
-        timer.schedule(task, 0, 1000L);
+        //timer.schedule(task, 0, 1000L);
 
         // Обрабатываем GUI кнопки настроек.
-        constraints.weightx = 0;
-        constraints.weighty = 0;
-        constraints.gridx = 0;
-        constraints.gridy = 0;
-        bSettings = new JButton();
-        bSettings.setBounds(0, 0, 50, 50);
+//        constraints.weightx = 0;
+//        constraints.weighty = 0;
+//        constraints.gridx = 0;
+//        constraints.gridy = 0;
+        bSettings = new ButtonWImage(" ", "/icons/settings", false);
+        bSettings.setPreferredSize(new Dimension(50, 50));
         bSettings.setActionCommand("settings");
         bSettings.addActionListener(this);
         bSettings.setMnemonic(KeyEvent.VK_S);
-        add(bSettings, constraints);
-        bSettings.setIcon(resizeImage(bSettings.getBounds().width, bSettings.getBounds().height, imSettings));
+        add(bSettings);
+        bSettings.setBounds(0,0,50,50);
+        //add(bSettings, constraints);
+        //bSettings.setIcon(resizeImage(bSettings.getBounds().width, bSettings.getBounds().height, imSettings));
 
         // Обрабатываем GUI кнопки старта и окончания игры.
-        constraints.gridy = 1;
-        bStartStop = new JButton();
-        bStartStop.setBounds(100, 0, 50, 50);
+        //constraints.gridy = 1;
+        bStartStop = new ButtonWImage(" ", "/icons/start", false);
+        bStartStop.setPreferredSize(new Dimension(50, 50));
         bStartStop.setMnemonic(KeyEvent.VK_P);
         bStartStop.setActionCommand("start_game");
         bStartStop.addActionListener(this);
-        add(bStartStop, constraints);
-        bStartStop.setIcon(resizeImage(bStartStop.getBounds().width, bStartStop.getBounds().height, imStart));
+        //add(bStartStop, constraints);
+        add(bStartStop);
+        bStartStop.setBounds(0,60,50,50);
+        add(Box.createVerticalStrut(1));
+        //bStartStop.setIcon(resizeImage(bStartStop.getBounds().width, bStartStop.getBounds().height, imStart));
 
         // Обрабатываем GUI игрового поля.
         table = new Table();
-        updatePosition.schedule(update, 0, 500L);
-        constraints.gridx = 1;
-        constraints.gridy = 0;
-        constraints.weighty = 1;
-        constraints.weightx = 1;
-        constraints.gridwidth = 5;
-        constraints.gridheight = 5;
-        table.setBounds(0, 0, table.cellx * 9, table.celly * 9);
-        add(table, constraints);
+        //updatePosition.schedule(update, 0, 500L);
+        bStartStop.setPreferredSize(new Dimension(table.cellx * 9, table.celly * 9));
+        //table.setBounds(0, 0, table.cellx * 9, table.celly * 9);
+        table.setBounds((int)Math.round(getWidth()/2 - table.cellx*4.5),(int)Math.round(getHeight()/2 - table.celly*4.5),table.cellx*9,table.celly*9);
+        add(table);
 
+//        getComponent(0).setBounds(0, 0, 50, 50);
+//        getComponent(1).setBounds(0, 60, 50, 50);
+//        getComponent(2).setBounds(200, 200, 1000, 1000);
         // Обновляем GUI.
-        FlatDarculaLaf.updateUI();
-        FlatDarculaLaf.repaintAllFramesAndDialogs();
+//        FlatDarculaLaf.updateUI();
+//        FlatDarculaLaf.repaintAllFramesAndDialogs();
 
         // Обновляем абсолютную позицию клеток стола.
-        updateAbsolutePosition(table);
+        //updateAbsolutePosition(table);
 
-        addComponentListener(new ComponentAdapter() {
-            public void componentResized(ComponentEvent e) {
-                // Обновляем абсолютную позицию клеток стола.
-                updateAbsolutePosition(table);
-                FlatLaf.updateUI();
-                FlatLaf.repaintAllFramesAndDialogs();
-            }
-        });
+//        addComponentListener(new ComponentAdapter() {
+//            public void componentResized(ComponentEvent e) {
+//                // Обновляем абсолютную позицию клеток стола.
+//                updateAbsolutePosition(table);
+//                FlatLaf.updateUI();
+//                FlatLaf.repaintAllFramesAndDialogs();
+//            }
+//        });
+        //pack();
     }
 
     // Абсолютные позиции левой верхней и правой нижней клетки.
@@ -223,8 +228,9 @@ public class MainFrame extends JFrame implements ActionListener {
                 // Начинаем игру.
                 table.startGame();
                 // Изменяем назначение и внешний вид кнопки.
+                bStartStop = new ButtonWImage(" ", "/icons/settings-sliders", false);
+                bStartStop.setSize(50, 50);
                 bStartStop.setActionCommand("stop_game");
-                bStartStop.setIcon(resizeImage(bStartStop.getBounds().width, bStartStop.getBounds().height, imStop));
                 // Запускаем таймер.
                 startTimer = true;
             }
@@ -233,7 +239,8 @@ public class MainFrame extends JFrame implements ActionListener {
                 table.stopGame();
                 // Изменяем кнопку.
                 bStartStop.setActionCommand("start_game");
-                bStartStop.setIcon(resizeImage(bStartStop.getBounds().width, bStartStop.getBounds().height, imStart));
+                bStartStop.setSize(50, 50);
+                bStartStop = new ButtonWImage(" ", "/icons/settings-sliders", false);
                 // Отрубаем таймер.
                 startTimer = false;
                 // Изменяем название программы.
@@ -246,7 +253,6 @@ public class MainFrame extends JFrame implements ActionListener {
                 // Вызываем диалог с настройками.
                 SettingsFrame settingsFrame = new SettingsFrame(this);
                 settingsFrame.setVisible(true);
-
             }
         }
     }
