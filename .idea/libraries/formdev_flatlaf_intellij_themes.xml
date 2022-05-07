@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="formdev.flatlaf.intellij.themes" type="repository">
+    <properties maven-id="com.formdev:flatlaf-intellij-themes:2.1" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/formdev/flatlaf-intellij-themes/2.1/flatlaf-intellij-themes-2.1.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/formdev/flatlaf/2.1/flatlaf-2.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/formdev/flatlaf-intellij-themes/2.1/flatlaf-intellij-themes-2.1-sources.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/formdev/flatlaf/2.1/flatlaf-2.1-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
