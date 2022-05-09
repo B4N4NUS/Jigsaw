@@ -160,12 +160,23 @@ public class Figure {
             }
     };
 
-        /**
-         * Статичный метод получения новой рандомной фигуры.
-         * @return - массив, задающий фигуру.
-         */
+    /**
+     * Статичный метод получения новой рандомной фигуры.
+     *
+     * @return - массив, задающий фигуру.
+     */
     public static int[][] getRandomFigure() {
         Random rnd = new Random();
         return figures[rnd.nextInt(0, 31)];
+    }
+
+    public static int[][] getBlankFigure() {
+        int[][] blank = new int[3][3];
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                blank[i][j] = 0;
+            }
+        }
+        return blank;
     }
 }

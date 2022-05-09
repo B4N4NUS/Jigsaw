@@ -1,8 +1,4 @@
-import com.formdev.flatlaf.FlatDarculaLaf;
-import com.formdev.flatlaf.FlatLaf;
-import com.formdev.flatlaf.intellijthemes.FlatGradiantoDeepOceanIJTheme;
-import com.formdev.flatlaf.intellijthemes.FlatHighContrastIJTheme;
-import com.formdev.flatlaf.intellijthemes.FlatMaterialDesignDarkIJTheme;
+import com.formdev.flatlaf.intellijthemes.FlatAllIJThemes;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,9 +12,10 @@ import java.util.Objects;
  */
 public class SettingsSaver {
 
-    static Color color;
-    static String theme;
-    static boolean enableLayer;
+    public static boolean settingsAlive;
+    public static Rectangle settingsBounds = null;
+    public static Rectangle mainBounds = null;
+    public static String theme;
 
     /**
      * Метод получения настроек из файла.
@@ -28,8 +25,9 @@ public class SettingsSaver {
      */
     static void getSettings(String path) throws IOException {
         FileReader fw = new FileReader(path);
+        //str = theme + "\n" + MainFrame.highscore + "\n" + settingsAlive + "\n" + sb + "\n" + mb;
         String data = "";
-        char[] raw = new char[100];
+        char[] raw = new char[300];
         int length = fw.read(raw);
 
         // Вытаскиваем информацию из файла.
@@ -39,26 +37,33 @@ public class SettingsSaver {
 
         // Обрабатываем информацию
         String[] dataArray = data.split("\n");
-        if (dataArray.length != 4) {
-            throw new IOException("Incorrect File Data");
+
+
+        int x, y, w, h;
+
+        theme = dataArray[0];
+        MainFrame.highscore = Integer.parseInt(dataArray[1]);
+        String[] rawColor = dataArray[3].split(",");
+
+        x = Integer.parseInt(rawColor[0]);
+        y = Integer.parseInt(rawColor[1]);
+        if (x == -1) {
+            settingsBounds = null;
         } else {
-            int r = 0, g = 0, b = 0;
-
-            theme = dataArray[0];
-            MainFrame.highscore = Integer.parseInt(dataArray[2]);
-            String[] rawColor = dataArray[1].split(" ");
-
-            if (rawColor.length != 3) {
-                throw new IOException("Incorrect File Data");
-            } else {
-                r = Integer.parseInt(rawColor[0]);
-                g = Integer.parseInt(rawColor[1]);
-                b = Integer.parseInt(rawColor[2]);
-            }
-
-            color = new Color(r, g, b);
-            enableLayer = Objects.equals(dataArray[3], "true");
+            settingsBounds = new Rectangle(x, y, 1, 1);
         }
+        System.out.println("settings " + settingsBounds);
+        rawColor = dataArray[4].split(",");
+
+        x = Integer.parseInt(rawColor[0]);
+        y = Integer.parseInt(rawColor[1]);
+        if (x == -1) {
+            mainBounds = null;
+        } else {
+            mainBounds = new Rectangle(x, y,1,1);
+        }
+        System.out.println("main " + mainBounds);
+
         //System.out.println("Reading - success");
         fw.close();
     }
@@ -67,73 +72,43 @@ public class SettingsSaver {
      * Метод установки восстановленных данный.
      */
     static void setSettings() {
-        Table.color = color;
-
-        FigurePanel.visibleLayout = enableLayer;
-        if (enableLayer) {
-            SettingsFrame.enabledLayer = true;
-        }
-
-        Class<? extends FlatLaf> newLaf = FlatDarculaLaf.class;
-        switch (theme) {
-            case "Dark" -> {
-                newLaf = FlatDarculaLaf.class;
-                SettingsFrame.currentTheme = 0;
-                MainFrame.Jigsaw = new ImageIcon("src/main/java/icons/black.png");
-            }
-            case "Gradianto Deep Oceam" -> {
-                newLaf = FlatGradiantoDeepOceanIJTheme.class;
-                SettingsFrame.currentTheme = 1;
-                MainFrame.Jigsaw = new ImageIcon("src/main/java/icons/blue.png");
-            }
-            case "High Contrast" -> {
-                newLaf = FlatHighContrastIJTheme.class;
-                Table.color = Color.BLACK;
-                SettingsFrame.currentTheme = 2;
-                MainFrame.Jigsaw = new ImageIcon("src/main/java/icons/orange.png");
-            }
-            case "Material Desigh Dark" -> {
-                newLaf = FlatMaterialDesignDarkIJTheme.class;
-                SettingsFrame.currentTheme = 3;
-                MainFrame.Jigsaw = new ImageIcon("src/main/java/icons/pink.png");
-            }
-        }
 
         try {
-            UIManager.setLookAndFeel(newLaf.getName().toString());
+            UIManager.setLookAndFeel(theme);
+            for(var i : FlatAllIJThemes.INFOS) {
+                if (Objects.equals(i.getClassName(), theme)) {
+                    SettingsFrame.oldSel = i;
+                    System.out.println(i.getName());
+                } else {
+                    //System.out.println(i.getClassName() + " " + theme);
+                }
+            }
+           // SettingsFrame.oldSel = UIManager.getLookAndFeel()
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException ex) {
             ex.printStackTrace();
         }
 
-        FlatLaf.updateUI();
-        FlatLaf.repaintAllFramesAndDialogs();
+//        FlatLaf.updateUI();
+//        FlatLaf.repaintAllFramesAndDialogs();
     }
 
     /**
      * Метод сохранения настроек в файл.
+     *
      * @param path - Путь.
      * @throws IOException - Эксепшн из-за запрета на запись.
      */
     static void saveSettings(String path) throws IOException {
         String str = "";
-        switch (SettingsFrame.currentTheme) {
-            case 0 -> {
-                theme = "Dark";
-            }
-            case 1 -> {
-                theme = "Gradianto Deep Oceam";
-            }
-            case 2 -> {
-                theme = "High Contrast";
-            }
-            case 3 -> {
-                theme = "Material Desigh Dark";
-            }
+        theme = SettingsFrame.oldSel.getClassName();
+        String sb, mb;
+        if (settingsBounds == null) {
+            sb = "-1,-1,-1,-1";
+        } else {
+            sb = settingsBounds.x + "," + settingsBounds.y + "," + settingsBounds.width + "," + settingsBounds.height;
         }
-        color = Table.color;
-        String savedColor = color.getRed() + " " + color.getGreen() + " " + color.getBlue();
-
-        str = theme + "\n" + savedColor + "\n" + MainFrame.highscore + "\n" + FigurePanel.visibleLayout;
+        mb = mainBounds.x + "," + mainBounds.y + "," + mainBounds.width + "," + mainBounds.height;
+        str = theme + "\n" + MainFrame.highscore + "\n" + settingsAlive + "\n" + sb + "\n" + mb + "\n";
         FileWriter fw = new FileWriter(path);
         for (int i = 0; i < str.length(); i++) {
             fw.write(str.charAt(i));
