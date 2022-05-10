@@ -116,7 +116,7 @@ public class MainFrame extends JFrame implements ActionListener {
             }
         });
     }
-    // hjansdjhahjfe ruygweyf hafhuyasrfeguyagfduywqr
+
     /**
      * Метод, инициализирующий GUI игры.
      */
