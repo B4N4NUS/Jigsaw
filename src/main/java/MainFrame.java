@@ -1,5 +1,6 @@
 import com.formdev.flatlaf.intellijthemes.FlatArcIJTheme;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -90,22 +91,18 @@ public class MainFrame extends JFrame implements ActionListener {
         if (SettingsSaver.mainBounds != null) {
             frame.setLocation(SettingsSaver.mainBounds.x, SettingsSaver.mainBounds.y);
         }
-    }
-
-    /**
-     * Метод, инициализирующий GUI игры.
-     */
-    public void Init() {
-
-        addComponentListener(new ComponentListener() {
+        try {
+            Thread.sleep(10);
+        } catch (Exception ignored){}
+        frame.addComponentListener(new ComponentListener() {
             @Override
             public void componentResized(ComponentEvent e) {
-                saveFrameInfo();
+                frame.saveFrameInfo();
             }
 
             @Override
             public void componentMoved(ComponentEvent e) {
-                saveFrameInfo();
+                frame.saveFrameInfo();
             }
 
             @Override
@@ -118,9 +115,18 @@ public class MainFrame extends JFrame implements ActionListener {
 
             }
         });
+    }
+
+    /**
+     * Метод, инициализирующий GUI игры.
+     */
+    public void Init() {
 
         // Задаем внешний вид окну.
         //setIconImage(Jigsaw.getImage());
+        try{
+        setIconImage(ImageIO.read(MainFrame.class.getResource("/icons/black.png")));
+        } catch (Exception ignored) {}
         setTitle("Jigsaw");
         //setBounds(100, 100, 1200, 800);
         setVisible(true);
