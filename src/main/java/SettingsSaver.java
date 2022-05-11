@@ -52,7 +52,7 @@ public class SettingsSaver {
         } else {
             settingsBounds = new Rectangle(x, y, 1, 1);
         }
-        System.out.println("settings " + settingsBounds);
+        //System.out.println("settings " + settingsBounds);
         rawColor = dataArray[4].split(",");
 
         x = Integer.parseInt(rawColor[0]);
@@ -62,7 +62,7 @@ public class SettingsSaver {
         } else {
             mainBounds = new Rectangle(x, y,1,1);
         }
-        System.out.println("main " + mainBounds);
+        //System.out.println("main " + mainBounds);
 
         //System.out.println("Reading - success");
         fw.close();
@@ -78,7 +78,7 @@ public class SettingsSaver {
             for(var i : FlatAllIJThemes.INFOS) {
                 if (Objects.equals(i.getClassName(), theme)) {
                     SettingsFrame.oldSel = i;
-                    System.out.println(i.getName());
+                    //System.out.println(i.getName());
                 } else {
                     //System.out.println(i.getClassName() + " " + theme);
                 }

@@ -160,6 +160,15 @@ public class Figure {
             }
     };
 
+    public static int getFigIndex(int[][] fig) {
+        for(int i = 0; i < figures.length; i++) {
+            if (figures[i] == fig) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     /**
      * Статичный метод получения новой рандомной фигуры.
      *

@@ -9,44 +9,25 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 
+import static javax.swing.JOptionPane.ERROR_MESSAGE;
+import static javax.swing.JOptionPane.showMessageDialog;
+
 /**
  * Класс, отвечающий за отрисовку поля с фигурой и игровую логику.
  */
 public class Table extends JPanel implements MouseListener, MouseMotionListener {
-    // Логическое представление поля.
-    static int[][] field = new int[9][9];
-    // Графическое представление поля.
-    //Cell[][] UIField = new Cell[9][9];
 
-    // Выявленные путем проб и ошибок погрешности позиции мыши относительно поля.
-    final int xOfset = 126;
-    final int yOfset = 0;
-
-    // Счет.
+    private static int[][] field = new int[9][9];
     public int score = 0;
-
-    // Цвет поля.
-    public static Color color = Color.WHITE;
-
     private boolean play = false;
-
-    // Фигура.
-    int[][] fig;
-
-    // Слушатель ДНДропа.
-    DropTargetListener dropHandler;
-    DropTarget dropTarget;
+    private int[][] fig;
 
     MainFrame owner;
 
-
     Graphics2D g2;
-    //Rectangle2D square;
     Color colour;
-
     double x1, y1, x2, y2, size;
     double offsetX, offsetY;
-
     boolean dragging = false;
 
 
@@ -57,7 +38,6 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
                 field[i][j] = 0;
-                //UIField[i][j].setEnabled(false);
             }
         }
     }
@@ -69,7 +49,17 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
         clearTable();
         score = 0;
         System.out.println("Board Cleared");
-        fig = Figure.getRandomFigure();
+        try {
+            if (Connection.figIndex == -1) {
+                showMessageDialog(null,"Can't get data from server", "Error", ERROR_MESSAGE);
+                owner.dispose();
+            }
+            fig = Figure.figures[Connection.figIndex];
+        } catch (Exception ex) {
+            showMessageDialog(null,"Can't get next figure from server\nTry restarting app ", "Error", ERROR_MESSAGE);
+            ex.printStackTrace();
+            owner.dispose();
+        }
         repaint();
         play = true;
     }
@@ -78,45 +68,36 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
      * Метод остановки игры.
      */
     public void stopGame() {
-        //currentFig = new FigurePanel();
-        //currentFig.setSize(new Dimension(MainFrame.prefX, MainFrame.prefY));
-        //GridBagConstraints constraints = new GridBagConstraints();
-        //constraints.gridx = 10;
-        //constraints.gridy = 0;
-        //constraints.gridheight = 3;
-        //constraints.gridwidth = 3;
-        //constraints.fill = GridBagConstraints.NONE;
         try {
             fig = Figure.getBlankFigure();
             repaint();
-        } catch (Exception ex) {
-            //add(currentFig, constraints);
+        } catch (Exception ignored) {
         }
         play = false;
-        //FlatLaf.updateUI();
-        //FlatLaf.repaintAllFramesAndDialogs();
     }
+
+    public Connection connection;
 
     /**
      * Конструктор.
      */
-    public Table(MainFrame owner) {
+    public Table(MainFrame owner, Connection connection) {
+        this.connection = connection;
+
         x1 = MainFrame.prefX * 10;
         y1 = MainFrame.prefY * 3;
         size = MainFrame.prefX * 3;
         x2 = x1 + size;
         y2 = y1 + size;
 
-        //square = new Rectangle2D.Double(x1, y1, size, size);
         colour = Color.BLUE;
         setFocusable(true);
         addMouseListener(this);
         addMouseMotionListener(this);
         this.requestFocus();
 
-
         fig = Figure.getBlankFigure();
-        //fig = Figure.getRandomFigure();
+
         this.owner = owner;
         setMaximumSize(new Dimension(MainFrame.prefX * 9, MainFrame.prefY * 9));
     }
@@ -149,9 +130,6 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                     g2.fillRoundRect((int) (x1 + MainFrame.prefX * i + 2), (int) (y1 + MainFrame.prefY * j + 2), MainFrame.prefX - 3, MainFrame.prefX - 3, 5, 5);
                 }
             }
-//            g2.draw(square);
-//            g2.setColor(colour);
-//            g2.draw(square);
 
             Graphics scratchGraphics = (g == null) ? null : g.create();
             try {
@@ -165,13 +143,10 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                 for (int i = 0; i < 9 * MainFrame.prefX; i += MainFrame.prefX) {
                     for (int j = 0; j < 9 * MainFrame.prefY; j += MainFrame.prefY) {
                         if (field[i / MainFrame.prefX][j / MainFrame.prefY] == 1) {
-
                             g2.fillRoundRect(i + 2, j + 2, MainFrame.prefX - 3, MainFrame.prefY - 3, 5, 5);
                         } else {
-                            //g2.setPaint(disabled);
                         }
                         g2.drawRoundRect(i + 2, j + 2, MainFrame.prefX - 3, MainFrame.prefY - 3, 5, 5);
-                        //g2.fillRoundRect(i+2, j+2,  MainFrame.prefX-3, MainFrame.prefY-3, 5,5);
                     }
                 }
 
@@ -208,13 +183,7 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
         if (dragging) {
             boolean reject = false;
 
-            Point leftUp = new Point(0,0);
-            Point rightDown = new Point(MainFrame.prefX*9, MainFrame.prefY*9);
-            System.out.println(leftUp + " " +rightDown);
-            System.out.println(x1 + " " + y1);
             if (-5 < (int)x1 && (int)x1 < MainFrame.prefX*9 && -5 < (int)y1 && (int)y1 < MainFrame.prefY*9) {
-                System.out.println("GOCHA");
-
                 Point cell = new Point();
                 double min = 10000000;
                 for(int i = 0; i < 9; i++) {
@@ -226,7 +195,6 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                         }
                     }
                 }
-                System.out.println("ABOBA " +cell);
                 Point trueFigSize = new Point(0,0);
                 for(int i = 1; i < 3; i++) {
                     for(int j = 1; j < 3; j++) {
@@ -242,7 +210,6 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                 }
                 if (trueFigSize.x+ cell.x > 8 || trueFigSize.y + cell.y > 8) {
                     reject = true;
-                    System.out.println("WOMAN DETECTED OPINION REJECTED");
                 }
 
                 if (!reject) {
@@ -254,7 +221,6 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                             }
                         }
                     }
-                    System.out.println("rejected");
                 }
                 int addScore = 0;
                 if (!reject) {
@@ -266,12 +232,24 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                             }
                         }
                     }
-                    System.out.println("bruh");
+                    System.out.println("Placed");
                     x1 = MainFrame.prefX * 10;
                     y1 = MainFrame.prefY * 3;
                     x2 = x1 + size;
                     y2 = y1 + size;
-                    fig = Figure.getRandomFigure();
+
+                    //connection.writeToServer("new");
+
+                    try {
+
+                    } catch (Exception ignored){}
+                    try {
+                        connection.writeToServer("0 " + Connection.figIndex);
+                        fig = Figure.figures[Connection.figIndex];
+                    } catch (Exception ex) {
+                        showMessageDialog(null,"Can't get next figure from server\nTry restarting app ", "Error", ERROR_MESSAGE);
+                        owner.dispose();
+                    }
                 }
                 if (reject) {
                     addScore = 0;
@@ -284,6 +262,8 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                 if (score > MainFrame.highscore) {
                     MainFrame.highscore = score;
                 }
+                //connection.writeToServer(Packet.wrap(score, Packet.Type.SCORE));
+
             } else {
                 x1 = MainFrame.prefX * 10;
                 y1 = MainFrame.prefY * 3;
