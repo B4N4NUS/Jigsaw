@@ -42,7 +42,7 @@ public class SettingsSaver {
         int x, y, w, h;
 
         theme = dataArray[0];
-        MainFrame.highscore = Integer.parseInt(dataArray[1]);
+        //MainFrame.highscore = Integer.parseInt(dataArray[1]);
         String[] rawColor = dataArray[3].split(",");
 
         x = Integer.parseInt(rawColor[0]);
@@ -108,7 +108,7 @@ public class SettingsSaver {
             sb = settingsBounds.x + "," + settingsBounds.y + "," + settingsBounds.width + "," + settingsBounds.height;
         }
         mb = mainBounds.x + "," + mainBounds.y + "," + mainBounds.width + "," + mainBounds.height;
-        str = theme + "\n" + MainFrame.highscore + "\n" + settingsAlive + "\n" + sb + "\n" + mb + "\n";
+        //str = theme + "\n" + MainFrame.highscore + "\n" + settingsAlive + "\n" + sb + "\n" + mb + "\n";
         FileWriter fw = new FileWriter(path);
         for (int i = 0; i < str.length(); i++) {
             fw.write(str.charAt(i));

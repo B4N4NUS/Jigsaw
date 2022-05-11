@@ -16,7 +16,7 @@ import java.awt.event.ComponentListener;
 /**
  * Класс диалога с настройками.
  */
-public class SettingsFrame extends JDialog implements ActionListener {
+public class SettingsFrame extends JDialog {
     // Настоящий цвет игрового поля.
     static Color realColor = Color.WHITE;
     // Выбранная тема.
@@ -96,7 +96,6 @@ public class SettingsFrame extends JDialog implements ActionListener {
         for (int i = 0; i < themeNames.length; i++) {
             themesButtons[i] = new JButton(themeNames[i] + " Theme");
             themesButtons[i].setBounds(0, i * 50, 200, 45);
-            themesButtons[i].addActionListener(this);
             themesButtons[i].setActionCommand(themeNames[i]);
             //add(themesButtons[i]);
         }
@@ -227,78 +226,5 @@ public class SettingsFrame extends JDialog implements ActionListener {
         }
         // На всякий случай выходим из приложения таким образом, во избежание проблем с закрытием потоков.
         //System.exit(0);
-    }
-
-    /**
-     * Хендлер нажатия на кнопку.
-     * @param e - событие нажатия.
-     */
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        // Выбор новой темы.
-        Class<? extends FlatLaf> newLaf = FlatDarculaLaf.class;
-        switch (e.getActionCommand()) {
-            case "Dark" -> {
-                newLaf = FlatDarculaLaf.class;
-                Table.color = realColor;
-                changeColor.setEnabled(true);
-                currentTheme = 0;
-                // Меняем иконку экрана с игрой.
-                MainFrame.Jigsaw = new ImageIcon("/icons/black");
-            }
-            case "Gradianto Deep Ocean" -> {
-                newLaf =FlatGradiantoDeepOceanIJTheme.class;
-                Table.color = realColor;
-                currentTheme = 1;
-                changeColor.setEnabled(true);
-                // Меняем иконку экрана с игрой.
-                MainFrame.Jigsaw = new ImageIcon("/icons/blue.png");
-            }
-            case "High Contrast" -> {
-                Table.color = Color.BLACK;
-                newLaf = FlatHighContrastIJTheme.class;
-                currentTheme = 2;
-                changeColor.setEnabled(false);
-                // Меняем иконку экрана с игрой.
-                MainFrame.Jigsaw = new ImageIcon("/icons/orange.png");
-            }
-            case "Material Desigh Dark" -> {
-                newLaf = FlatMaterialDesignDarkIJTheme.class;
-                Table.color = realColor;
-                changeColor.setEnabled(true);
-                currentTheme = 3;
-                // Меняем иконку экрана с игрой.
-                MainFrame.Jigsaw = new ImageIcon("/icons/pink.png");
-            }
-            case "color" -> {
-                if (currentTheme == 2) {
-                    Table.color = Color.BLACK;
-                } else {
-                    realColor = JColorChooser.showDialog(null, "Choose a color", Table.color);
-                    Table.color = realColor;
-                }
-                FlatLaf.updateUI();
-                FlatLaf.repaintAllFramesAndDialogs();
-                return;
-            }
-            case "layout" -> {
-                // Включаем/выключаем отрисовку панели на фигурах.
-                enabledLayer = !enabledLayer;
-                FigurePanel.visibleLayout = !FigurePanel.visibleLayout;
-                System.out.println(FigurePanel.visibleLayout + " current layout option");
-                FlatLaf.updateUI();
-                FlatLaf.repaintAllFramesAndDialogs();
-                return;
-            }
-        }
-        // Пушим новый GUI в UIManager.
-        try {
-            UIManager.setLookAndFeel(newLaf.getName().toString());
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException ex) {
-            ex.printStackTrace();
-        }
-        // Обновляем GUI.
-        FlatLaf.updateUI();
-        FlatLaf.repaintAllFramesAndDialogs();
     }
 }
