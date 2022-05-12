@@ -39,8 +39,7 @@ public class Server extends Thread {
     @Override
     public void run() {
         try {
-            ServerSocket serverSocket = new ServerSocket(port);
-            System.out.println("Waiting for connection");
+
 
             Random random = new Random();
             int[] figs = new int[81];
@@ -51,9 +50,13 @@ public class Server extends Thread {
                 if (figs[i] == figs[i + 1]) {
                     figs[i + 1] = 31 - figs[i];
                 }
-                System.out.print(figs[i] + " ");
+                //System.out.print(figs[i] + " ");
             }
-            System.out.println(figs[80]);
+            System.out.println("Figure list was generated");
+            //System.out.println(figs[80]);
+
+            ServerSocket serverSocket = new ServerSocket(port);
+            System.out.println("Server was created\nWaiting for connection");
 
 
             Thread first = new Thread() {
@@ -63,14 +66,14 @@ public class Server extends Thread {
                     String name = "";
                     boolean disconnected = false;
 
-                    System.out.println("Thread first started");
+                    System.out.println("[P1] Thread started");
                     try {
                         socket = serverSocket.accept();
                         socket.setSoTimeout(1000);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    System.out.println("First connection gained");
+                    System.out.println("[P1] Connection gained");
 
                     writeToClient("0 " + figs[index++]);
                     writeToClient("2 " + 10);
@@ -92,28 +95,28 @@ public class Server extends Thread {
                             ArrayList<String> buf = new ArrayList<>();
 
                             while (in.ready()) {
-                                System.out.println("\n1 Buffer:");
+                                System.out.println("\n[P1] Buffer:");
                                 buf.add(in.readLine());
                                 System.out.println(buf.get(buf.size() - 1));
                             }
 
                             for (String s : buf) {
-                                System.out.println("1 Got " + s);
+                                System.out.println("[P1] Got (" + s+")");
                                 switch (s.charAt(0)) {
                                     case '0' -> {
                                         fig = Integer.parseInt(s.split(" ")[1]);
                                         writeToClient("0 " + figs[index++]);
                                         writeToClient("1 " + (index - 1));
-                                        System.out.println("1 Sent " + figs[index - 1]);
+                                        System.out.println("[P1] Sent (0" + figs[index - 1]+")");
                                     }
                                     case '3' -> {
                                         name = s.split(" ")[1];
                                         firstName = name;
-                                        System.out.println("1 Name " + name);
+                                        System.out.println("[P1] Got name " + name);
                                     }
                                     case '4' -> {
                                         firstLost = true;
-                                        System.out.println("1 Disconnected");
+                                        System.out.println("[P1] Lost connection");
                                     }
                                 }
                             }
@@ -128,7 +131,7 @@ public class Server extends Thread {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    System.out.println("Thread first ended");
+                    System.out.println("[P1] Thread ended");
                 }
             };
 
@@ -139,14 +142,14 @@ public class Server extends Thread {
                     String name = "";
                     boolean disconnected = false;
 
-                    System.out.println("Thread second started");
+                    System.out.println("[P2] Thread started");
                     try {
                         ssocket = serverSocket.accept();
                         ssocket.setSoTimeout(1000);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    System.out.println("Second connection gained");
+                    System.out.println("[P2] Connection gained");
 
 
                     writeToClient2("0 " + figs[index2++]);
@@ -163,27 +166,26 @@ public class Server extends Thread {
                             ArrayList<String> buf = new ArrayList<>();
 
                             while (in.ready()) {
-                                System.out.println("\n2 Buffer:");
                                 buf.add(in.readLine());
-                                System.out.println(buf.get(buf.size() - 1));
+                                System.out.println("[P2] Buffer: ("+buf.get(buf.size() - 1) + ")");
                             }
 
                             for (String s : buf) {
-                                System.out.println("2 Got " + s);
+                                System.out.println("[P2] Got " + s);
                                 switch (s.charAt(0)) {
                                     case '0' -> {
                                         fig = Integer.parseInt(s.split(" ")[1]);
                                         writeToClient2("0 " + figs[index2++]);
-                                        System.out.println("2 Sent " + figs[index2 - 1]);
+                                        System.out.println("[P2] Sent (" + figs[index2 - 1]+")");
                                     }
                                     case '3' -> {
                                         name = s.split(" ")[1];
                                         secondName = name;
-                                        System.out.println("2 Name " + name);
+                                        System.out.println("[P2] Got name (" + name+")");
                                     }
                                     case '4' -> {
                                         secondLost = true;
-                                        System.out.println("2 Disconnected");
+                                        System.out.println("[P2] Lost connection");
                                     }
                                 }
                             }
@@ -198,7 +200,7 @@ public class Server extends Thread {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    System.out.println("Thread second ended");
+                    System.out.println("[P2] Thread ended");
                 }
             };
 
@@ -206,6 +208,7 @@ public class Server extends Thread {
             TimerTask task = new TimerTask() {
                 @Override
                 public void run() {
+                    System.out.println("Delayed");
                     if (firstName != null) {
                         if (secondPlayer & secondName != null) {
                             if (index > index2) {
@@ -215,22 +218,42 @@ public class Server extends Thread {
                                 writeToClient("5 lost");
                                 writeToClient2("5 won");
                             }
+                            running = false;
+                            cancel();
+                        }
+                        if (!secondPlayer) {
+                            writeToClient("5 won");
+                            running = false;
+                            cancel();
                         }
                     }
                 }
             };
 
+            TimerTask startTimer = new TimerTask() {
+                @Override
+                public void run() {
+                    System.out.println("Started timer");
+                    if (firstName != null) {
+                        if (!secondPlayer || secondName != null) {
+                            timer.schedule(task,Integer.parseInt(gui.time.getText())*1000,100);
+                            cancel();
+                        }
+                    }
+                }
+            };
             first.start();
             if (secondPlayer) {
                 second.start();
             }
-            timer.schedule(task, Integer.parseInt(gui.time.getText())*1000, 1000);
+            System.out.println("Started delay");
+            timer.schedule(startTimer, 0, 1);
             while (running) {
                 System.out.print("");
             }
-            first.stop();
-            second.stop();
+
             System.out.println("Server closed");
+            serverSocket.close();
         } catch (Exception e) {
             e.printStackTrace();
         }

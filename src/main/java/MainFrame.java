@@ -50,17 +50,20 @@ public class MainFrame extends JFrame{
 
         JLabel ipLabel, portLabel, timeLabel;
 
+        cons.anchor = GridBagConstraints.NORTHWEST;
+        cons.insets = new Insets(5,10,5,5);
+        cons.gridx = 1;
         add(ipLabel  =  new JLabel("IP:   "), cons);
 
-        cons.gridx = 1;
+        cons.gridx = 2;
         add(ip = new JTextArea(), cons);
         ip.setText("localhost");
 
-        cons.gridx = 0;
+        cons.gridx = 1;
         cons.gridy = 1;
         add(portLabel = new JLabel("Port: "), cons);
 
-        cons.gridx = 1;
+        cons.gridx = 2;
         add(port = new JTextArea(), cons);
         port.setText("6969");
 
@@ -69,36 +72,34 @@ public class MainFrame extends JFrame{
         //setSize(new Dimension(300,300));
 
         cons.gridx = 0;
-        cons.gridy = 2;
-        cons.gridwidth = 1;
-        JButton start = new JButton("start server");
+        cons.gridy = 0;
+        cons.gridheight = 4;
+        ButtonWImage start = new ButtonWImage("/icons/start","/icons/clock");
+        start.setPreferredSize(new Dimension(50,50));
         add(start, cons);
         start.addActionListener(e-> {
+            start.state = !start.state;
+            //start.repaint();
             server = new Server(Integer.parseInt(port.getText()), "Jigsaw Server", this);
-            server.start();
-        });
-        cons.gridx = 1;
-        cons.gridy = 2;
-        cons.gridwidth = 1;
-        JButton stop = new JButton("stop server");
-        add(stop, cons);
-        stop.addActionListener(e-> {
-            Server.running = false;
+            server.run();
         });
 
-        cons.gridy = 3;
+        cons.gridheight = 1;
+        cons.gridx = 1;
+        cons.gridy = 4;
         JRadioButton second = new JRadioButton("second player");
         add(second, cons);
         second.addActionListener(e-> {
             Server.secondPlayer = second.isSelected();
         });
 
-        cons.gridy = 4;
-        cons.gridx = 0;
+        cons.gridy = 3;
         time = new JTextArea();
+        time.setText("10");
+        time.setPreferredSize(new Dimension(300,25));
         timeLabel = new JLabel("Session time: ");
         add(timeLabel, cons);
-        cons.gridx = 1;
+        cons.gridx = 2;
         add(time, cons);
 
         pack();
