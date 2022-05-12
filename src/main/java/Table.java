@@ -262,7 +262,6 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                 if (score > MainFrame.highscore) {
                     MainFrame.highscore = score;
                 }
-                //connection.writeToServer(Packet.wrap(score, Packet.Type.SCORE));
 
             } else {
                 x1 = MainFrame.prefX * 10;

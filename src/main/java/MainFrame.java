@@ -44,14 +44,18 @@ public class MainFrame extends JFrame implements ActionListener {
             if (won) {
                 table.stopGame();
                 table.setVisible(false);
-                showMessageDialog(null, "YOU WON LOL!", "Congratulation", JOptionPane.WARNING_MESSAGE);
+                showMessageDialog(null, "YOU WON LOL!", "Congratulation", JOptionPane.INFORMATION_MESSAGE);
                 won = false;
+//                cancel();
+//                Init();
             }
             if (lost) {
                 table.stopGame();
                 table.setVisible(false);
                 showMessageDialog(null, "YOU LOST LOL!", "NOT Congratulation", ERROR_MESSAGE);
                 lost = false;
+//                cancel();
+//                Init();
             }
         }
     };
@@ -92,14 +96,10 @@ public class MainFrame extends JFrame implements ActionListener {
             }
 
             @Override
-            public void componentShown(ComponentEvent e) {
-
-            }
+            public void componentShown(ComponentEvent e) {}
 
             @Override
-            public void componentHidden(ComponentEvent e) {
-
-            }
+            public void componentHidden(ComponentEvent e) {}
         });
 
     }
@@ -108,6 +108,7 @@ public class MainFrame extends JFrame implements ActionListener {
      * Метод, инициализирующий GUI игры.
      */
     public void Init() {
+        getContentPane().removeAll();
         try {
             setIconImage(ImageIO.read(MainFrame.class.getResource("/icons/black.png")));
         } catch (Exception ignored) {
@@ -131,7 +132,7 @@ public class MainFrame extends JFrame implements ActionListener {
         setMinimumSize(new Dimension(650, 450));
 
 
-        bStartStop = new ButtonWImage("/icons/start", "/icons/stop");
+        bStartStop = new ButtonWImage("/icons/clock", "/icons/clock");
         bStartStop.setPreferredSize(new Dimension(75, 75));
         bStartStop.setMnemonic(KeyEvent.VK_P);
         bStartStop.setActionCommand("start_game");
@@ -140,7 +141,7 @@ public class MainFrame extends JFrame implements ActionListener {
         bStartStop.setBounds(5, 60, 50, 50);
         add(Box.createVerticalStrut(1));
 
-        nameLabel = new JLabel("oh the misery everybody");
+        nameLabel = new JLabel("oh the misery, everybody");
         add(nameLabel);
         nameLabel.setPreferredSize(new Dimension(100, 50));
         nameLabel.setBounds(5, 200, 100, 50);
@@ -148,7 +149,6 @@ public class MainFrame extends JFrame implements ActionListener {
         add(enemyLabel);
         enemyLabel.setPreferredSize(new Dimension(100, 50));
         enemyLabel.setBounds(5, 400, 100, 50);
-
 
 
         custom = new PreGameCustomization(this);
@@ -191,9 +191,7 @@ public class MainFrame extends JFrame implements ActionListener {
         }
         try {
             connection.writeToServer("4 0 4");
-        } catch (Exception ignored) {
-        }
-
+        } catch (Exception ignored) {}
 
         System.exit(0);
     }
