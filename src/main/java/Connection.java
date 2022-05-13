@@ -1,5 +1,3 @@
-import com.sun.tools.javac.Main;
-
 import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -9,36 +7,60 @@ import static javax.swing.JOptionPane.ERROR_MESSAGE;
 import static javax.swing.JOptionPane.showMessageDialog;
 
 public class Connection extends Thread{
-    private Socket socket;
+    public Socket socket;
     public static boolean running = true;
     private String name;
+    private String ipAdress;
     private int port;
-
 
     public static boolean disconected = false;
     public static int figIndex = -1;
     public static int maxTime = -1;
     private MainFrame owner;
 
-    public Connection(String port, String name, MainFrame owner) {
+    /**
+     * Конструктор.
+     * @param port - порт сервера.
+     * @param name - имя игрока.
+     * @param ipAdress - адрес сервера.
+     * @param owner - главное окно приложения.
+     */
+    public Connection(String port, String name, String ipAdress, MainFrame owner) {
         this.port = Integer.parseInt(port);
         this.name = name;
         this.owner = owner;
+        this.ipAdress = ipAdress;
     }
 
-    public boolean exist() {
-        return socket != null;
-    }
-
+    /**
+     * Метод, поднимающий сокет для связи с сервером.
+     * @throws IOException - кидает эксепшены при закрытом сокете.
+     */
     public void openSocket() throws IOException {
-        String IPAddress = "localhost";
+        // Открываем сокет.
         try {
-            socket = new Socket(IPAddress, port);
+            socket = new Socket(ipAdress, port);
             socket.setSoTimeout(1000);
         } catch(ConnectException ce) {
             showMessageDialog(null,"Cant connect to server", "Error", ERROR_MESSAGE);
-            owner.dispose();
+            //owner.table.stopGame();
+            owner.table.setVisible(false);
+            owner.custom.setVisible(true);
+
+            //owner.bStartStop.doClick();
+
+
+            //owner.table.stopGame();
+            // Изменяем кнопку.
+            owner.bStartStop.setActionCommand("start_game");
+            owner.bStartStop.state = !owner.bStartStop.state;
+            // Отрубаем таймер.
+            owner.startTimer = false;
+            // Обнуляем количество прошедших секунд.
+            owner.elapsedSeconds = 1;
+            throw ce;
         }
+        // Поток записи на сервер.
         Thread writer = new Thread("Writer") {
             @Override
             public void run() {
@@ -49,49 +71,85 @@ public class Connection extends Thread{
             }
         };
         writer.start();
+
+        // Поток чтения с сервера.
         Thread reader = new Thread("Reader") {
             @Override
             public void run() {
                 System.out.println("started reading");
+                // Пока игра идет.
                 while(running) {
                     try {
-                        //System.out.println("Reading");
+                        // Проверка пульса сокета.
+                        if (socket.isClosed()) {
+                            break;
+                        }
+                        // Поток записи на сервер.
                         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                         ArrayList<String> buf = new ArrayList<>();
 
-
+                        // Крутим пока в буфере есть данные.
                         while(in.ready()) {
-                            System.out.println("\nBuffer:");
                             buf.add(in.readLine());
-                            System.out.println(buf.get(buf.size()-1));
                         }
+                        // Обрабатываем полученные данные.
                         for (String s : buf) {
                             switch (s.charAt(0)) {
+                                // Получение новой фигуры.
                                 case '0' -> {
                                     figIndex = Integer.parseInt(s.split(" ")[1]);
                                     System.out.println("new fig index " + figIndex);
                                 }
+                                // Получение новой информации об очках.
                                 case '1' -> {
                                     System.out.println("new score " + s.split(" ")[1]);
                                 }
+                                // Получения нового максимального времени игры.
                                 case '2' -> {
                                     maxTime = Integer.parseInt(s.split(" ")[1]);
                                     System.out.println("new max time " + maxTime);
                                 }
+                                // Получение имени оппонента.
                                 case '3' -> {
                                     owner.enemyLabel.setText(s.split(" ")[1]);
                                 }
+                                // Получение информации об отключении оппонента.
                                 case '4' -> {
                                     disconected = true;
                                     MainFrame.won = true;
-                                    System.out.println("new disconnection status " + disconected);
+                                    System.out.println("Enemy disconnected " + disconected);
                                 }
+                                // Информация о победителе.
                                 case '5' -> {
-                                    if (s.split(" ")[1].equals("won")) {
-                                        MainFrame.won = true;
-                                    } else {
-                                        MainFrame.lost = true;
+                                    switch (s.split(" ")[1]) {
+                                        // Игрок победил.
+                                        case "won" -> {
+                                            MainFrame.won = true;
+
+                                        }
+                                        // Игрок проиграл.
+                                        case "lost" -> {
+                                            MainFrame.lost = true;
+                                        }
+                                        // Сервер не закончил свою работу и был закрыт.
+                                        case "dead" -> {
+                                            owner.table.stopGame();
+                                            owner.table.setVisible(false);
+                                            owner.custom.setVisible(true);
+                                            owner.bStartStop.doClick();
+                                            showMessageDialog(null, "Lost connection with server!", "ERROR", ERROR_MESSAGE);
+                                            try {
+                                                closeSocket();
+                                            } catch (IOException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
                                     }
+                                }
+                                // Получение счета оппонента.
+                                case '6' -> {
+                                    MainFrame.secondScore = Integer.parseInt(s.split(" ")[1]) - 1;
+                                    //System.out.println("Second player's score " + MainFrame.secondScore);
                                 }
                                 default -> {
                                 }
@@ -107,10 +165,19 @@ public class Connection extends Thread{
         };
         reader.start();
     }
+
+    /**
+     * Закрытие сокетов.
+     * @throws IOException - невозможность закрытия.
+     */
     public void closeSocket() throws IOException {
         socket.close();
     }
 
+    /**
+     * Метод, посылающий информацию на сервер.
+     * @param text - сообщение.
+     */
     public void writeToServer(String text) {
         try {
             PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
@@ -118,23 +185,5 @@ public class Connection extends Thread{
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-    }
-
-    public String readFromServer() {
-        try {
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            String buf = "";
-            while(in.ready()) {
-                buf = in.readLine();
-                System.out.println(buf);
-            }
-            if (buf.equals("*")) {
-                MainFrame.won = true;
-            }
-            return buf;
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return null;
     }
 }

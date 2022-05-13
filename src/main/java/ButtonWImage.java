@@ -9,12 +9,18 @@ import java.awt.image.ImageObserver;
 import java.io.IOException;
 import java.util.Objects;
 
+// Класс кастомной кнопочки, написанный специально для использования с FlatLaf.
 public class ButtonWImage extends JButton {
 
     private final String path;
     private final String alterPath;
     public boolean state;
 
+    /**
+     * Конструктор.
+     * @param path - путь до картинки.
+     * @param alterPath - путь до альтернативной картинки.
+     */
     public ButtonWImage(String path, String alterPath) {
         super(" ");
         this.path = path;
@@ -22,40 +28,20 @@ public class ButtonWImage extends JButton {
         state = true;
     }
 
-    public static BufferedImage scale(BufferedImage src, int w, int h) {
-        BufferedImage img =
-                new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-        int x, y;
-        int ww = src.getWidth();
-        int hh = src.getHeight();
-        int[] ys = new int[h];
-        for (y = 0; y < h; y++)
-            ys[y] = y * hh / h;
-        for (x = 0; x < w; x++) {
-            int newX = x * ww / w;
-            for (y = 0; y < h; y++) {
-                int col = src.getRGB(newX, ys[y]);
-                img.setRGB(x, y, col);
-            }
-        }
-        return img;
-    }
-
-
+    /**
+     * Метод каста из Image в BufferedImage
+     * @param img - изначальная картинка.
+     * @return - переделанная картинка.
+     */
     public static BufferedImage toBufferedImage(Image img) {
         if (img instanceof BufferedImage) {
             return (BufferedImage) img;
         }
-
-        // Create a buffered image with transparency
         BufferedImage bimage = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
-
-        // Draw the image on to the buffered image
         Graphics2D bGr = bimage.createGraphics();
         bGr.drawImage(img, 0, 0, null);
         bGr.dispose();
 
-        // Return the buffered image
         return bimage;
     }
 
@@ -67,7 +53,6 @@ public class ButtonWImage extends JButton {
             Graphics scratchGraphics = (g == null) ? null : g.create();
             try {
                 String text = getText();
-                //BufferedImage img = scale(src, (int) Math.round(getHeight()*0.9), (int) Math.round(getHeight()*0.9));
                 BufferedImage img;
                 if (state) {
                     img = toBufferedImage(ImageIO.read(Objects.requireNonNull(
@@ -80,10 +65,7 @@ public class ButtonWImage extends JButton {
                             getScaledInstance((int) Math.round(getHeight() * 0.8), (int) Math.round(getHeight() * 0.8),
                                     Image.SCALE_SMOOTH));
                 }
-                Font font = getFont();
                 assert g != null;
-                FontMetrics fm = g.getFontMetrics();
-                int width = fm.stringWidth(text);
 
                 Graphics2D g2 = (Graphics2D) g.create();
                 RenderingHints qualityHints = new RenderingHints(RenderingHints.KEY_ANTIALIASING,
@@ -96,17 +78,9 @@ public class ButtonWImage extends JButton {
                         color.getBlue())));
                 g2.fillRoundRect(2, 2, getHeight() - 3, getHeight() - 3, 20, 20);
                 g2.drawImage(img, (int) Math.round(getHeight() * 0.1), (int) Math.round(getHeight() * 0.1 ),
-                        new ImageObserver() {
-                            @Override
-                            public boolean imageUpdate(Image img, int infoflags, int x, int y, int width, int height) {
-                                return false;
-                            }
-                        });
+                        (img1, infoflags, x, y, width, height) -> false);
 
-                //g2.drawRoundRect(0, 0, getWidth()-2, getHeight()-2, 20, 20);
                 g2.dispose();
-                //System.out.println("sosi");
-                //ui.update(scratchGraphics, this);
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {

@@ -170,15 +170,9 @@ public class Figure {
     }
 
     /**
-     * Статичный метод получения новой рандомной фигуры.
-     *
-     * @return - массив, задающий фигуру.
+     * Метод, возвращающий пустую фигуру. Используется как плейсхолдер после конца матча.
+     * @return - пустая фигура.
      */
-    public static int[][] getRandomFigure() {
-        Random rnd = new Random();
-        return figures[rnd.nextInt(0, 31)];
-    }
-
     public static int[][] getBlankFigure() {
         int[][] blank = new int[3][3];
         for (int i = 0; i < 3; i++) {

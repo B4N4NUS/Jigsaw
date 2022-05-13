@@ -1,4 +1,4 @@
-import com.formdev.flatlaf.intellijthemes.FlatArcIJTheme;
+import com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatMaterialDarkerContrastIJTheme;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -12,96 +12,92 @@ import static javax.swing.JOptionPane.ERROR_MESSAGE;
 import static javax.swing.JOptionPane.showMessageDialog;
 
 public class MainFrame extends JFrame implements ActionListener {
+    // Общие размеры элементов интерфейса для комфортной работы.
     public static int prefX = 25;
     public static int prefY = 25;
 
+    // Переменные, отвечающие за победу/поражение игрока.
     public static boolean won = false;
     public static boolean lost = false;
+
+    // Класс с сокетом для подключения к серверу.
     public static Connection connection;
 
-    private static final ImageIcon Jigsaw = new ImageIcon("/icons/black.png");
+    // Игровое поле.
+    public Table table;
 
-    private Table table;
-    private PreGameCustomization custom;
-    private ButtonWImage bStartStop;
-    private ButtonWImage bSettings;
-
+    // Элементы интерфейса.
+    public PreGameCustomization custom;
+    public ButtonWImage bStartStop;
+    public ButtonWImage bSettings;
     public JLabel nameLabel, enemyLabel;
 
-    public static int highscore = 0;
-    static long elapsedSeconds = 1;
+    // Счетчик прошедших секунд.
+    public static long elapsedSeconds = 1;
 
     boolean startTimer = false;
 
+    public static int secondScore = 0;
+
+    // Таймер, работающий каждую секунду и меняющий ЮИ.
     Timer timer = new Timer("Timer");
     TimerTask task = new TimerTask() {
         @Override
         public void run() {
             if (startTimer) {
-                setTitle("Jigsaw \t[time: " + elapsedSeconds++ + " s] \t[score: " + table.score + "] \t[highscore: "
-                        + highscore + "]");
+                // Если задано время матча.
+                if (Connection.maxTime != -1) {
+                    // Если игра должна была закончиться, но сервер ничего не сказал.
+                    if (Connection.maxTime == elapsedSeconds) {
+                        setTitle("Jigsaw \t[time: " + elapsedSeconds++ + " s] \t[score: " + table.score + "]");
+                        if (table.score > secondScore) {
+                            won = true;
+                        } else {
+                            lost = true;
+                        }
+                    } else {
+                        setTitle("Jigsaw \t[time: " + elapsedSeconds++ + " s] \t[max time: " + Connection.maxTime + "] \t[score: " + table.score + "]");
+                    }
+                } else {
+                    setTitle("Jigsaw \t[time: " + elapsedSeconds++ + " s] \t[score: " + table.score + "]");
+                }
+
             }
+            // Если игрок победил.
             if (won) {
                 table.stopGame();
                 table.setVisible(false);
-                showMessageDialog(null, "YOU WON LOL!", "Congratulation", JOptionPane.INFORMATION_MESSAGE);
+                custom.setVisible(true);
+                bStartStop.doClick();
+                showMessageDialog(null, "YOU WON!\nYour score: " +table.score +"\n" + (secondScore > 0? enemyLabel.getText() + "'s score: " + secondScore: ""), "Congratulation", JOptionPane.INFORMATION_MESSAGE);
                 won = false;
-//                cancel();
-//                Init();
+                try {
+                    connection.closeSocket();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
+            // Если игрок проиграл.
             if (lost) {
                 table.stopGame();
                 table.setVisible(false);
-                showMessageDialog(null, "YOU LOST LOL!", "NOT Congratulation", ERROR_MESSAGE);
+                custom.setVisible(true);
+                bStartStop.doClick();
+                showMessageDialog(null, "YOU LOST!\nYour score: " +table.score +"\n" + (secondScore > 0? enemyLabel.getText() + "'s score: " + secondScore: ""), "NOT Congratulation", ERROR_MESSAGE);
                 lost = false;
-//                cancel();
-//                Init();
             }
         }
     };
 
 
-
+    /**
+     * Место запуска программы.
+     * @param args - входные аргументы
+     */
     public static void main(String[] args) {
-        // Пытаемся восстановить сохраненные настройки.
-        try {
-            SettingsSaver.getSettings("Jigsaw.save");
-            SettingsSaver.setSettings();
-        } catch (Exception ex) {
-            FlatArcIJTheme.setup();
-            System.out.println("No save file found!");
-        }
-
-
+        FlatMaterialDarkerContrastIJTheme.setup();
         MainFrame frame = new MainFrame();
         frame.Init();
-
-        if (SettingsSaver.mainBounds != null) {
-            frame.setLocation(SettingsSaver.mainBounds.x, SettingsSaver.mainBounds.y);
-        }
-        try {
-            Thread.sleep(10);
-        } catch (Exception ignored) {
-        }
-
-        frame.addComponentListener(new ComponentListener() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                frame.saveFrameInfo();
-            }
-
-            @Override
-            public void componentMoved(ComponentEvent e) {
-                frame.saveFrameInfo();
-            }
-
-            @Override
-            public void componentShown(ComponentEvent e) {}
-
-            @Override
-            public void componentHidden(ComponentEvent e) {}
-        });
-
     }
 
     /**
@@ -132,7 +128,7 @@ public class MainFrame extends JFrame implements ActionListener {
         setMinimumSize(new Dimension(650, 450));
 
 
-        bStartStop = new ButtonWImage("/icons/clock", "/icons/clock");
+        bStartStop = new ButtonWImage("/icons/start", "/icons/busy");
         bStartStop.setPreferredSize(new Dimension(75, 75));
         bStartStop.setMnemonic(KeyEvent.VK_P);
         bStartStop.setActionCommand("start_game");
@@ -165,33 +161,28 @@ public class MainFrame extends JFrame implements ActionListener {
         table.setBounds((int) Math.round(getWidth() / 2 - prefX * 4.5), (int) Math.round(getHeight() / 2 - prefY * 4.5), prefX * 15, prefY * 11);
         add(Box.createVerticalStrut(1));
 
+        setLocationRelativeTo(null);
         pack();
     }
 
-
-    protected void saveFrameInfo() {
-        Rectangle b = getBounds();
-        SettingsSaver.mainBounds = b;
-        try {
-            SettingsSaver.saveSettings("Jigsaw.save");
-        } catch (Exception ignored) {
-        }
-    }
-
+    /**
+     * Переопределенный метод очистки ресурсов.
+     */
     @Override
     public void dispose() {
         super.dispose();
         task.cancel();
-
-
+        // Пытаемся закрыть сокет.
         try {
-            SettingsSaver.saveSettings("Jigsaw.save");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        try {
-            connection.writeToServer("4 0 4");
-        } catch (Exception ignored) {}
+            if (connection != null) {
+                if (connection.socket != null) {
+                    if (!connection.socket.isClosed()) {
+                        connection.writeToServer("4 ima ded lol");
+                    }
+                    connection.closeSocket();
+                }
+            }
+        } catch (IOException ignored) {}
 
         System.exit(0);
     }
@@ -205,12 +196,13 @@ public class MainFrame extends JFrame implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         switch (e.getActionCommand()) {
             case "start_game" -> {
-                connection = new Connection(custom.port.getText(), custom.name.getText(), this);
+                connection = new Connection(custom.port.getText(), custom.name.getText(),custom.ip.getText(), this);
                 try {
                     connection.openSocket();
-                    Thread.sleep(1000);
+                    Thread.sleep(100);
                 } catch (Exception ex) {
                     ex.printStackTrace();
+                    return;
                 }
                 //connection.readFromServer();
                 // Начинаем игру.
@@ -219,7 +211,7 @@ public class MainFrame extends JFrame implements ActionListener {
                 table.connection = connection;
                 table.startGame();
                 // Изменяем назначение и внешний вид кнопки.
-                bStartStop.state = !bStartStop.state;
+                //bStartStop.state = !bStartStop.state;
                 bStartStop.setSize(50, 50);
                 bStartStop.setActionCommand("stop_game");
                 // Запускаем таймер.
@@ -227,12 +219,8 @@ public class MainFrame extends JFrame implements ActionListener {
             }
             case "stop_game" -> {
                 // Заканчиваем игру.
-                try {
                     connection.writeToServer("4 ima ded lol");
-                    connection.closeSocket();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
+
                 table.stopGame();
                 // Изменяем кнопку.
                 bStartStop.setActionCommand("start_game");
@@ -241,17 +229,14 @@ public class MainFrame extends JFrame implements ActionListener {
                 // Отрубаем таймер.
                 startTimer = false;
                 // Изменяем название программы.
-                setTitle("Jigsaw \t[played for: " + (elapsedSeconds - 1) + " s] \t[score: " + table.score + "] " +
-                        "\t[highscore: " + highscore + "]");
+                setTitle("Jigsaw \t[played for: " + (elapsedSeconds - 1) + " s] \t[score: " + table.score + "] ");
                 // Обнуляем количество прошедших секунд.
                 elapsedSeconds = 1;
             }
             case "settings" -> {
                 // Вызываем диалог с настройками.
-                SettingsSaver.settingsAlive = true;
                 SettingsFrame settingsFrame = new SettingsFrame(this);
                 settingsFrame.setVisible(true);
-                SettingsSaver.settingsAlive = false;
             }
         }
     }

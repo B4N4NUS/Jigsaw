@@ -16,20 +16,47 @@ import static javax.swing.JOptionPane.showMessageDialog;
  * Класс, отвечающий за отрисовку поля с фигурой и игровую логику.
  */
 public class Table extends JPanel implements MouseListener, MouseMotionListener {
-
+    // Поле.
     private static int[][] field = new int[9][9];
+    // Нынешний счет.
     public int score = 0;
+    // Идет ли сейчас игра.
     private boolean play = false;
+    // Нынешняя фигура.
     private int[][] fig;
 
     MainFrame owner;
 
     Graphics2D g2;
-    Color colour;
+    // Координаты фигуры.
     double x1, y1, x2, y2, size;
     double offsetX, offsetY;
     boolean dragging = false;
 
+    public Connection connection;
+
+    /**
+     * Конструктор.
+     */
+    public Table(MainFrame owner, Connection connection) {
+        this.connection = connection;
+
+        x1 = MainFrame.prefX * 10;
+        y1 = MainFrame.prefY * 3;
+        size = MainFrame.prefX * 3;
+        x2 = x1 + size;
+        y2 = y1 + size;
+
+        setFocusable(true);
+        addMouseListener(this);
+        addMouseMotionListener(this);
+        this.requestFocus();
+
+        fig = Figure.getBlankFigure();
+
+        this.owner = owner;
+        setMaximumSize(new Dimension(MainFrame.prefX * 9, MainFrame.prefY * 9));
+    }
 
     /**
      * Метод очистки стола.
@@ -51,14 +78,25 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
         System.out.println("Board Cleared");
         try {
             if (Connection.figIndex == -1) {
-                showMessageDialog(null,"Can't get data from server", "Error", ERROR_MESSAGE);
-                owner.dispose();
+                showMessageDialog(null, "Can't get data from server", "Error", ERROR_MESSAGE);
+                //owner.dispose();
+                owner.table.stopGame();
+                owner.table.setVisible(false);
+                owner.custom.setVisible(true);
+                owner.bStartStop.state = true;
+                //owner.bStartStop.doClick();
+            } else {
+                fig = Figure.figures[Connection.figIndex];
             }
-            fig = Figure.figures[Connection.figIndex];
         } catch (Exception ex) {
-            showMessageDialog(null,"Can't get next figure from server\nTry restarting app ", "Error", ERROR_MESSAGE);
+            showMessageDialog(null, "Can't get next figure from server", "Error", ERROR_MESSAGE);
             ex.printStackTrace();
-            owner.dispose();
+            //owner.dispose();
+            owner.table.stopGame();
+            owner.table.setVisible(false);
+            owner.custom.setVisible(true);
+            owner.bStartStop.state = true;
+            //owner.bStartStop.doClick();
         }
         repaint();
         play = true;
@@ -69,6 +107,7 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
      */
     public void stopGame() {
         try {
+            Connection.figIndex = -1;
             fig = Figure.getBlankFigure();
             repaint();
         } catch (Exception ignored) {
@@ -76,41 +115,22 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
         play = false;
     }
 
-    public Connection connection;
-
     /**
-     * Конструктор.
+     * Переопределяем метод перерисовки, чтобы на поле отрисовывалась тянущаяся фигура.
+     *
+     * @param g - графика
      */
-    public Table(MainFrame owner, Connection connection) {
-        this.connection = connection;
-
-        x1 = MainFrame.prefX * 10;
-        y1 = MainFrame.prefY * 3;
-        size = MainFrame.prefX * 3;
-        x2 = x1 + size;
-        y2 = y1 + size;
-
-        colour = Color.BLUE;
-        setFocusable(true);
-        addMouseListener(this);
-        addMouseMotionListener(this);
-        this.requestFocus();
-
-        fig = Figure.getBlankFigure();
-
-        this.owner = owner;
-        setMaximumSize(new Dimension(MainFrame.prefX * 9, MainFrame.prefY * 9));
-    }
-
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         if (ui != null) {
+            // Вытаскиваем цвета.
             ColorUIResource color = (ColorUIResource) UIManager.get("ComboBox.background");
             ColorUIResource backColor = (ColorUIResource) UIManager.get("Panel.background");
-            if (Math.abs(color.getRed() - backColor.getRed()) < 20 && Math.abs(color.getGreen() - backColor.getGreen()) < 20  && Math.abs(color.getBlue() - backColor.getBlue()) < 20 ) {
-                color = new ColorUIResource(FlatLaf.isLafDark()?Color.WHITE : Color.BLACK);
+            if (Math.abs(color.getRed() - backColor.getRed()) < 20 && Math.abs(color.getGreen() - backColor.getGreen()) < 20 && Math.abs(color.getBlue() - backColor.getBlue()) < 20) {
+                color = new ColorUIResource(FlatLaf.isLafDark() ? Color.WHITE : Color.BLACK);
             }
+            // Делаем новые кисти.
             GradientPaint enabled = new GradientPaint(new Point(0, 0), new Color(color.getRed(), color.getGreen(),
                     color.getBlue()), new Point(0, getHeight()), new Color(color.getRed(), color.getGreen(),
                     color.getBlue()));
@@ -118,7 +138,7 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                     backColor.getBlue()), new Point(0, getHeight()), new Color(backColor.getRed(), backColor.getGreen(),
                     backColor.getBlue()));
 
-
+            // Рисуем фигуру на позиции курсора.
             g2 = (Graphics2D) g;
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
@@ -139,6 +159,7 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                 qualityHints.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
                 g2.setRenderingHints(qualityHints);
 
+                // Рисуем игровое поле.
                 g2.setPaint(enabled);
                 for (int i = 0; i < 9 * MainFrame.prefX; i += MainFrame.prefX) {
                     for (int j = 0; j < 9 * MainFrame.prefY; j += MainFrame.prefY) {
@@ -166,6 +187,11 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
 
     }
 
+    /**
+     * Обработка начала перетягивания.
+     *
+     * @param ev - ивент мышки.
+     */
     @Override
     public void mousePressed(MouseEvent ev) {
         double mx = ev.getX();
@@ -178,26 +204,33 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
         }
     }
 
+    /**
+     * Обработка начала перетягивания.
+     *
+     * @param arg0 - ивент мышки.
+     */
     @Override
     public void mouseReleased(MouseEvent arg0) {
+        // Если перетаскивают именно фигуру.
         if (dragging) {
             boolean reject = false;
-
-            if (-5 < (int)x1 && (int)x1 < MainFrame.prefX*9 && -5 < (int)y1 && (int)y1 < MainFrame.prefY*9) {
+            // Смотрим попадание в таблицу.
+            if (-5 < (int) x1 && (int) x1 < MainFrame.prefX * 9 && -5 < (int) y1 && (int) y1 < MainFrame.prefY * 9) {
                 Point cell = new Point();
                 double min = 10000000;
-                for(int i = 0; i < 9; i++) {
-                    for(int j = 0; j < 9; j++) {
-                        if (Math.sqrt((i*MainFrame.prefX- x1)*(i*MainFrame.prefX- x1)+(j*MainFrame.prefY- y1)*(j*MainFrame.prefY- y1)) < min) {
+                for (int i = 0; i < 9; i++) {
+                    for (int j = 0; j < 9; j++) {
+                        // Находим минимальное расстояние до клетки от позиции мыши.
+                        if (Math.sqrt((i * MainFrame.prefX - x1) * (i * MainFrame.prefX - x1) + (j * MainFrame.prefY - y1) * (j * MainFrame.prefY - y1)) < min) {
                             cell.x = i;
                             cell.y = j;
-                            min = Math.sqrt((i*MainFrame.prefX- x1)*(i*MainFrame.prefX- x1)+(j*MainFrame.prefY- y1)*(j*MainFrame.prefY- y1));
+                            min = Math.sqrt((i * MainFrame.prefX - x1) * (i * MainFrame.prefX - x1) + (j * MainFrame.prefY - y1) * (j * MainFrame.prefY - y1));
                         }
                     }
                 }
-                Point trueFigSize = new Point(0,0);
-                for(int i = 1; i < 3; i++) {
-                    for(int j = 1; j < 3; j++) {
+                Point trueFigSize = new Point(0, 0);
+                for (int i = 1; i < 3; i++) {
+                    for (int j = 1; j < 3; j++) {
                         if (fig[i][j] == 1) {
                             if (trueFigSize.x != i) {
                                 trueFigSize.x = i;
@@ -208,26 +241,27 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                         }
                     }
                 }
-                if (trueFigSize.x+ cell.x > 8 || trueFigSize.y + cell.y > 8) {
+                // Если фигура не влезает в границы.
+                if (trueFigSize.x + cell.x > 8 || trueFigSize.y + cell.y > 8) {
                     reject = true;
                 }
 
                 if (!reject) {
+                    // Если фигура не влезает в границы.
                     for (int i = cell.x; i < cell.x + 3; i++) {
                         for (int j = cell.y; j < cell.y + 3; j++) {
-                            if (fig[i- cell.x][j- cell.y] == 1 && field[i][j] == 1) {
+                            if (fig[i - cell.x][j - cell.y] == 1 && field[i][j] == 1) {
                                 reject = true;
                                 break;
                             }
                         }
                     }
                 }
-                int addScore = 0;
+                // Если фигура все таки влезла.
                 if (!reject) {
                     for (int i = cell.x; i < cell.x + 3; i++) {
                         for (int j = cell.y; j < cell.y + 3; j++) {
-                            if (fig[i- cell.x][j- cell.y] == 1) {
-                                addScore++;
+                            if (fig[i - cell.x][j - cell.y] == 1) {
                                 field[i][j] = 1;
                             }
                         }
@@ -238,31 +272,24 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                     x2 = x1 + size;
                     y2 = y1 + size;
 
-                    //connection.writeToServer("new");
-
-                    try {
-
-                    } catch (Exception ignored){}
+                    // Просим сервер выдать следующую фигуру.
                     try {
                         connection.writeToServer("0 " + Connection.figIndex);
+                        Thread.sleep(50);
                         fig = Figure.figures[Connection.figIndex];
                     } catch (Exception ex) {
-                        showMessageDialog(null,"Can't get next figure from server\nTry restarting app ", "Error", ERROR_MESSAGE);
+                        showMessageDialog(null, "Can't get next figure from server\nTry restarting app ", "Error", ERROR_MESSAGE);
                         owner.dispose();
                     }
                 }
                 if (reject) {
-                    addScore = 0;
                     x1 = MainFrame.prefX * 10;
                     y1 = MainFrame.prefY * 3;
                     x2 = x1 + size;
                     y2 = y1 + size;
+                } else {
+                    score++;
                 }
-                score += addScore;
-                if (score > MainFrame.highscore) {
-                    MainFrame.highscore = score;
-                }
-
             } else {
                 x1 = MainFrame.prefX * 10;
                 y1 = MainFrame.prefY * 3;
@@ -284,6 +311,11 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
 
     }
 
+    /**
+     * Обработка перетаскивания
+     *
+     * @param ev - ивент вышки.
+     */
     @Override
     public void mouseDragged(MouseEvent ev) {
         if (play) {

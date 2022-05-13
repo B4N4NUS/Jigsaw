@@ -33,15 +33,6 @@ public class SettingsFrame extends JDialog {
         }
     }
 
-    protected void saveFrameInfo() {
-        Rectangle b = getBounds();
-        SettingsSaver.settingsBounds = b;
-        try {
-            SettingsSaver.saveSettings("Jigsaw.save");
-        } catch (Exception ignored) {
-        }
-    }
-
     /**
      * Метод инициализации GUI.
      */
@@ -51,29 +42,6 @@ public class SettingsFrame extends JDialog {
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setMinimumSize(new Dimension(450, 400));
         setMaximumSize(new Dimension(451, 401));
-
-        addComponentListener(new ComponentListener() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                saveFrameInfo();
-            }
-
-            @Override
-            public void componentMoved(ComponentEvent e) {
-                saveFrameInfo();
-            }
-
-            @Override
-            public void componentShown(ComponentEvent e) {
-
-            }
-
-            @Override
-            public void componentHidden(ComponentEvent e) {
-
-            }
-        });
-
 
         themeList = new JList<>(FlatAllIJThemes.INFOS);
         themeList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -143,10 +111,6 @@ public class SettingsFrame extends JDialog {
         add(themesPane = new JScrollPane(themeList, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER));
         themesPane.setMinimumSize(new Dimension(200, 200));
         pack();
-
-        if (SettingsSaver.settingsBounds != null) {
-            setLocation(SettingsSaver.settingsBounds.x, SettingsSaver.settingsBounds.y);
-        }
     }
 
 
@@ -179,10 +143,5 @@ public class SettingsFrame extends JDialog {
     @Override
     public void dispose() {
         super.dispose();
-        try {
-            SettingsSaver.saveSettings("Jigsaw.save");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
     }
 }
