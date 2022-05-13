@@ -68,29 +68,6 @@ public class SettingsSaver {
         fw.close();
     }
 
-    /**
-     * Метод установки восстановленных данный.
-     */
-    static void setSettings() {
-
-        try {
-            UIManager.setLookAndFeel(theme);
-            for(var i : FlatAllIJThemes.INFOS) {
-                if (Objects.equals(i.getClassName(), theme)) {
-                    SettingsFrame.oldSel = i;
-                    System.out.println(i.getName());
-                } else {
-                    //System.out.println(i.getClassName() + " " + theme);
-                }
-            }
-           // SettingsFrame.oldSel = UIManager.getLookAndFeel()
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException ex) {
-            ex.printStackTrace();
-        }
-
-//        FlatLaf.updateUI();
-//        FlatLaf.repaintAllFramesAndDialogs();
-    }
 
     /**
      * Метод сохранения настроек в файл.
@@ -100,7 +77,6 @@ public class SettingsSaver {
      */
     static void saveSettings(String path) throws IOException {
         String str = "";
-        theme = SettingsFrame.oldSel.getClassName();
         String sb, mb;
         if (settingsBounds == null) {
             sb = "-1,-1,-1,-1";
