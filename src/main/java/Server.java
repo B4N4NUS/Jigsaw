@@ -1,28 +1,40 @@
-import jdk.jshell.execution.Util;
-import org.w3c.dom.ls.LSOutput;
-
 import javax.swing.*;
 import java.io.*;
-import java.lang.module.FindException;
 import java.net.*;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.*;
 import java.util.Timer;
-import java.util.function.Consumer;
 
-import static javax.swing.JOptionPane.ERROR_MESSAGE;
 import static javax.swing.JOptionPane.showMessageDialog;
 
 public class Server extends Thread {
     private final int port;
+    private final int timeout = 20;
+
     MainFrame gui;
     public static boolean running = true;
     public static boolean secondPlayer = false;
     public static ServerSocket serverSocket;
 
-    private final int timeout = 20;
+    static Socket firstSocket;
+    static Socket secondSocket;
 
+    boolean firstLost = false;
+    boolean secondLost = false;
+
+    String firstName = null;
+    String secondName = null;
+
+    boolean sendNames = true;
+
+    int firstIndex = 0;
+    int secondIndex = 0;
+
+    /**
+     * Конструктор.
+     * @param port - порт.
+     * @param name - имя потока.
+     * @param gui - главное окно приложения.
+     */
     public Server(int port, String name, MainFrame gui) {
         super(name);
         this.port = port;
@@ -30,21 +42,13 @@ public class Server extends Thread {
         running = true;
     }
 
-    static Socket socket;
-    static Socket ssocket;
-
-    boolean firstLost = false;
-    boolean secondLost = false;
-    String firstName = null;
-    String secondName = null;
-    boolean sendNames = true;
-
-    int index2 = 0;
-    int index = 0;
-
+    /**
+     * Переопределенный метод работы потока.
+     */
     @Override
     public void run() {
         try {
+            // Проверяем открытость и неизменность порта.
             if (serverSocket == null) {
                 serverSocket = new ServerSocket(port);
             } else {
@@ -56,6 +60,7 @@ public class Server extends Thread {
             }
             gui.ip.setText(String.valueOf(InetAddress.getLocalHost()).split("/")[1]);
 
+            // Генерируем массив фигур для передачи игрокам.
             Random random = new Random();
             int[] figs = new int[81];
             for (int i = 0; i < 81; i++) {
@@ -65,39 +70,40 @@ public class Server extends Thread {
                 if (figs[i] == figs[i + 1]) {
                     figs[i + 1] = 31 - figs[i];
                 }
-                //System.out.print(figs[i] + " ");
             }
             System.out.println("\nFigure list was generated");
-            //System.out.println(figs[80]);
-
-
             System.out.println("Server was created\nWaiting for connection");
 
-
+            // Создаем поток первого игрока.
             Thread first = new Thread() {
                 @Override
                 public void run() {
+                    // Нынешняя фигура.
                     int fig = -1;
+                    // Имя игрока.
                     String name = "";
-                    boolean disconnected = false;
 
                     System.out.println("[P1] Thread started");
+                    // Ждем подключение игрока.
                     try {
-                        socket = serverSocket.accept();
-                        socket.setSoTimeout(1000);
+                        firstSocket = serverSocket.accept();
+                        firstSocket.setSoTimeout(1000);
                         System.out.println("[P1] Connection gained");
 
-                        writeToClient("0 " + figs[index++]);
+                        // Высылаем ему первую фигуру.
+                        writeToClient("0 " + figs[secondIndex++]);
                         writeToClient("2 " + Integer.parseInt(gui.time.getText()));
-                    } catch (IOException ignored) {
-                    }
+                    } catch (IOException ignored) {}
 
+                    // Крутим пока игра идет.
                     while (running) {
                         try {
+                            // Если второй игрок отключился.
                             if (secondLost) {
                                 secondLost = false;
                                 writeToClient("4 second player is dead lol");
                             }
+                            // Если оба игрока подключились.
                             if (firstName != null && secondName != null && sendNames) {
                                 sendNames = false;
                                 writeToClient("3 " + secondName);
@@ -105,9 +111,12 @@ public class Server extends Thread {
                                     writeToClient2("3 " + firstName);
                                 }
                             }
-                            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+                            // Начинаем читать информацию из сокета.
+                            BufferedReader in = new BufferedReader(new InputStreamReader(firstSocket.getInputStream()));
                             ArrayList<String> buf = new ArrayList<>();
 
+                            // Получаем всю информацию.
                             while (in.ready()) {
                                 System.out.println("\n[P1] Buffer:");
                                 buf.add(in.readLine());
@@ -115,54 +124,49 @@ public class Server extends Thread {
                             }
 
                             for (String s : buf) {
-                                //System.out.println("[P1] Got (" + s+")");
                                 switch (s.charAt(0)) {
+                                    // Если это сообщение о получении новой фигуры.
                                     case '0' -> {
                                         fig = Integer.parseInt(s.split(" ")[1]);
-                                        writeToClient("0 " + figs[index++]);
-                                        writeToClient("1 " + (index - 1));
-                                        System.out.println("[P1] Sent (0" + figs[index - 1] + ")");
+                                        writeToClient("0 " + figs[secondIndex++]);
+                                        writeToClient("1 " + (secondIndex - 1));
+                                        System.out.println("[P1] Sent (0" + figs[secondIndex - 1] + ")");
                                     }
+                                    // Если это сообщение об имени игрока.
                                     case '3' -> {
                                         name = s.split(" ")[1];
                                         firstName = name;
                                         System.out.println("[P1] Got name (" + name + ")");
                                     }
+                                    // Если это сообщение об отключении игрока.
                                     case '4' -> {
                                         firstLost = true;
                                         System.out.println("[P1] Lost connection");
                                     }
                                 }
                             }
-                            writeToClient("6 " + index2);
-
-                        } catch (Exception ignored) {
-                            //ignored.printStackTrace();
-                        }
+                            // Отсылаем игроку счет соперника.
+                            writeToClient("6 " + firstIndex);
+                        } catch (Exception ignored) {}
                     }
-//                    try {
-//                        socket.close();
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
                     System.out.println("[P1] Thread ended");
                 }
             };
 
+            // Создаем поток второго игрока.
             Thread second = new Thread() {
                 @Override
                 public void run() {
                     int fig = -1;
                     String name = "";
-                    boolean disconnected = false;
 
                     System.out.println("[P2] Thread started");
                     try {
-                        ssocket = serverSocket.accept();
-                        ssocket.setSoTimeout(1000);
+                        secondSocket = serverSocket.accept();
+                        secondSocket.setSoTimeout(1000);
                         System.out.println("[P2] Connection gained");
 
-                        writeToClient2("0 " + figs[index2++]);
+                        writeToClient2("0 " + figs[firstIndex++]);
                         writeToClient2("2 " + Integer.parseInt(gui.time.getText()));
                     } catch (IOException ignored) {
                     }
@@ -174,7 +178,7 @@ public class Server extends Thread {
                                 writeToClient2("4 first player is dead lol");
                             }
 
-                            BufferedReader in = new BufferedReader(new InputStreamReader(ssocket.getInputStream()));
+                            BufferedReader in = new BufferedReader(new InputStreamReader(secondSocket.getInputStream()));
                             ArrayList<String> buf = new ArrayList<>();
 
                             while (in.ready()) {
@@ -188,9 +192,9 @@ public class Server extends Thread {
                                 switch (s.charAt(0)) {
                                     case '0' -> {
                                         fig = Integer.parseInt(s.split(" ")[1]);
-                                        writeToClient2("0 " + figs[index2++]);
-                                        writeToClient2("1 " + (index2 - 1));
-                                        System.out.println("[P2] Sent (" + figs[index2 - 1] + ")");
+                                        writeToClient2("0 " + figs[firstIndex++]);
+                                        writeToClient2("1 " + (firstIndex - 1));
+                                        System.out.println("[P2] Sent (" + figs[firstIndex - 1] + ")");
                                     }
                                     case '3' -> {
                                         name = s.split(" ")[1];
@@ -203,21 +207,14 @@ public class Server extends Thread {
                                     }
                                 }
                             }
-                            writeToClient2("6 " + index);
-
-                        } catch (Exception ignored) {
-                            //ignored.printStackTrace();
-                        }
+                            writeToClient2("6 " + secondIndex);
+                        } catch (Exception ignored) {}
                     }
-//                    try {
-//                        socket.close();
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
                     System.out.println("[P2] Thread ended");
                 }
             };
 
+            // Таймер конца игры.
             Timer timer = new Timer("timer");
             TimerTask task = new TimerTask() {
                 @Override
@@ -225,25 +222,24 @@ public class Server extends Thread {
                     System.out.println("Time has come");
                     if (firstName != null) {
                         if (secondPlayer & secondName != null) {
-                            if (index >= index2) {
-                                writeToClient("5 won "+ index + " " + index2);
-                                writeToClient2("5 lost "+ index2 + " " + index);
+                            if (secondIndex >= firstIndex) {
+                                writeToClient("5 won "+ secondIndex + " " + firstIndex);
+                                writeToClient2("5 lost "+ firstIndex + " " + secondIndex);
                             } else {
-                                writeToClient("5 lost "+ index + " " + index2);
-                                writeToClient2("5 won "+ index2 + " " + index);
+                                writeToClient("5 lost "+ secondIndex + " " + firstIndex);
+                                writeToClient2("5 won "+ firstIndex + " " + secondIndex);
                             }
                             running = false;
                             cancel();
                         }
                         if (!secondPlayer) {
-                            writeToClient("5 won " + index + " " + index2);
+                            writeToClient("5 won " + secondIndex + " " + firstIndex);
                             running = false;
                             cancel();
                         }
                     }
                 }
             };
-
             TimerTask startTimer = new TimerTask() {
                 @Override
                 public void run() {
@@ -257,57 +253,68 @@ public class Server extends Thread {
                 }
             };
 
+            // Таймер таймаута сервера.
             TimerTask stopServer = new TimerTask() {
                 @Override
                 public void run() {
                     System.out.println("Stopping server");
-                    if (index == 0 || (secondPlayer && index2 == 0)) {
+                    if (secondIndex == 0 || (secondPlayer && firstIndex == 0)) {
                         running = false;
-                        System.out.println(index + " " + index2);
+                        System.out.println(secondIndex + " " + firstIndex);
                         showMessageDialog(null, "No one connected to server in " + timeout + " seconds\nShutting down", "Error", JOptionPane.WARNING_MESSAGE);
                     }
                     cancel();
                 }
             };
 
+            // Старт потоков игроков.
             first.start();
             if (secondPlayer) {
                 second.start();
             }
+
+            // Старт таймеров.
             Timer timerStop = new Timer("stopServer");
             timerStop.schedule(stopServer, timeout * 1000, 1);
-
             System.out.println("Started delay");
             timer.schedule(startTimer, 0, 1);
+
+            // Замораживаем поток пока игроки не доиграют.
             while (running) {
                 System.out.print("");
             }
+            // Убиваем таймер таймаута.
             timerStop.cancel();
+
+            // Обнуляем все поля.
             System.out.println("Server closed");
             firstName = null;
             secondName = null;
             firstLost = false;
             secondLost = false;
-            //serverSocket.close();
-            socket = new Socket();
-            ssocket = new Socket();
+            firstSocket = new Socket();
+            secondSocket = new Socket();
             gui.reboot();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * Метод закрытия сокетов.
+     */
     public static void closeSockets() {
         try {
-            ssocket.close();
-            socket.close();
+            secondSocket.close();
+            firstSocket.close();
             serverSocket.close();
             System.out.println("Sockets closed successfully");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
+        } catch (Exception ignored) {}
     }
 
+    /**
+     * Метод, вызывающийся при отключении сервера. Рассылаем игрокам информацию о смерти сервера.
+     */
     public void death() {
         try {
             writeToClient("5 dead");
@@ -320,19 +327,26 @@ public class Server extends Thread {
         }
     }
 
+    /**
+     * Метод, пишущий информацию в сокет первого игрока.
+     * @param text - информация.
+     */
     public void writeToClient(String text) {
         try {
-            PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
+            PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(firstSocket.getOutputStream())), true);
             out.println(text);
         } catch (Exception ignored) {
         }
     }
-
+    /**
+     * Метод, пишущий информацию в сокет второго игрока.
+     * @param text - информация.
+     */
     public void writeToClient2(String text) {
         try {
-            PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(ssocket.getOutputStream())), true);
+            PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(secondSocket.getOutputStream())), true);
             out.println(text);
-        } catch (Exception ex) {
+        } catch (Exception ignored) {
         }
     }
 }

@@ -1,39 +1,27 @@
-import com.formdev.flatlaf.intellijthemes.FlatArcIJTheme;
 import com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatMaterialDarkerContrastIJTheme;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.text.NumberFormatter;
 import java.awt.*;
-import java.awt.event.*;
-import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
 public class MainFrame extends JFrame {
-    JLabel connected = new JLabel();
     static Server server;
 
     public JTextArea ip, port, time;
     JRadioButton second;
     ButtonWImage start;
+    // Уже бывавшие в использовании сервера закрытые порты.
     private ArrayList<Integer> usedPorts = new ArrayList<>();
 
     /**
      * Мейн метод, с которого начинается работа программы.
-     *
      * @param args - параметры запуска (не используются)
      */
     public static void main(String[] args) {
-        // Пытаемся восстановить сохраненные настройки.
-
         FlatMaterialDarkerContrastIJTheme.setup();
-        //ex.printStackTrace();
-
-        // Инициализаруем фрейм с игрой.
         MainFrame frame = new MainFrame();
         frame.Init();
     }
@@ -49,14 +37,10 @@ public class MainFrame extends JFrame {
         }
 
         setTitle("Jigsaw Server");
-        //setBounds(100, 100, 1200, 800);
         setVisible(true);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setLayout(new GridBagLayout());
         GridBagConstraints cons = new GridBagConstraints();
-
-
-        //add(connected);
 
         JLabel ipLabel, portLabel, timeLabel;
 
@@ -80,7 +64,6 @@ public class MainFrame extends JFrame {
 
         port.setPreferredSize(new Dimension(300, 25));
         ip.setPreferredSize(new Dimension(300, 25));
-        //setSize(new Dimension(300,300));
 
         cons.gridx = 0;
         cons.gridy = 0;
@@ -89,6 +72,7 @@ public class MainFrame extends JFrame {
         start.setPreferredSize(new Dimension(50, 50));
         add(start, cons);
         start.addActionListener(e -> {
+            // Обработка контента текстовых полей.
             int truePort = -1, trueTime = -1;
             try {
                 truePort = Integer.parseInt(port.getText());
@@ -114,6 +98,7 @@ public class MainFrame extends JFrame {
                 showMessageDialog(null, "Too late, I've already closed that port\nTry restarting server", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
+            // Начало работы серверного потока.
             usedPorts.add(truePort);
             start.state = !start.state;
             start.setEnabled(false);
@@ -144,8 +129,12 @@ public class MainFrame extends JFrame {
         add(time, cons);
 
         pack();
+        setLocationRelativeTo(null);
     }
 
+    /**
+     * Метод, возвращающий интерфейс в изначальное состояние.
+     */
     public void reboot() {
         start.setEnabled(true);
         start.state = true;
@@ -155,6 +144,9 @@ public class MainFrame extends JFrame {
         ip.setText("server is not running");
     }
 
+    /**
+     * Переопределенный метод освобождения системных ресурсов.
+     */
     @Override
     public void dispose() {
         if (Server.running) {
@@ -170,11 +162,5 @@ public class MainFrame extends JFrame {
         super.dispose();
         Server.closeSockets();
         System.exit(0);
-        // Отключаем таймеры.
-//        task.cancel();
-//        update.cancel();
-        // Пытаемся сохранить настройки.
-        // На всякий случай выходим из приложения таким образом, во избежание проблем с закрытием потоков.
-        //System.exit(0);
     }
 }
