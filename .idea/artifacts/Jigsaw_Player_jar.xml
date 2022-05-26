@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Jigsaw_Player:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/Jigsaw_Player_jar</output-path>
+    <root id="archive" name="Jigsaw_Player.jar">
+      <element id="module-output" name="Jigsaw_Player" />
+      <element id="dir-copy" path="$PROJECT_DIR$/src/main/resources" />
+    </root>
+  </artifact>
+</component>

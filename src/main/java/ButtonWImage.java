@@ -1,7 +1,6 @@
-import com.formdev.flatlaf.*;
-
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -26,6 +25,22 @@ public class ButtonWImage extends JButton {
         this.path = path;
         this.alterPath = alterPath;
         state = true;
+//        setBorder(new Border() {
+//            @Override
+//            public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+//                g.drawRoundRect(x, y, width-1, height-1, 20, 20);
+//            }
+//
+//            @Override
+//            public Insets getBorderInsets(Component c) {
+//                return new Insets(21, 21, 22, 20);
+//            }
+//
+//            @Override
+//            public boolean isBorderOpaque() {
+//                return false;
+//            }
+//        });
     }
 
     /**
@@ -56,12 +71,12 @@ public class ButtonWImage extends JButton {
                 BufferedImage img;
                 if (state) {
                     img = toBufferedImage(ImageIO.read(Objects.requireNonNull(
-                                    ButtonWImage.class.getResource(!FlatLaf.isLafDark() ? path + ".png" : path + "-white.png"))).
+                                    ButtonWImage.class.getResource( path + ".png"))).
                             getScaledInstance((int) Math.round(getHeight() * 0.8), (int) Math.round(getHeight() * 0.8),
                                     Image.SCALE_SMOOTH));
                 } else {
                     img = toBufferedImage(ImageIO.read(Objects.requireNonNull(
-                                    ButtonWImage.class.getResource(!FlatLaf.isLafDark() ? alterPath + ".png" : alterPath + "-white.png"))).
+                                    ButtonWImage.class.getResource(alterPath + ".png"))).
                             getScaledInstance((int) Math.round(getHeight() * 0.8), (int) Math.round(getHeight() * 0.8),
                                     Image.SCALE_SMOOTH));
                 }

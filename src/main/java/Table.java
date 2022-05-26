@@ -1,5 +1,3 @@
-import com.formdev.flatlaf.FlatLaf;
-
 import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
@@ -8,6 +6,7 @@ import java.awt.dnd.DropTargetListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.sql.SQLOutput;
 
 import static javax.swing.JOptionPane.ERROR_MESSAGE;
 import static javax.swing.JOptionPane.showMessageDialog;
@@ -33,13 +32,10 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
     double offsetX, offsetY;
     boolean dragging = false;
 
-    public Connection connection;
-
     /**
      * Конструктор.
      */
-    public Table(MainFrame owner, Connection connection) {
-        this.connection = connection;
+    public Table(MainFrame owner) {
 
         x1 = MainFrame.prefX * 10;
         y1 = MainFrame.prefY * 3;
@@ -76,28 +72,41 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
         clearTable();
         score = 0;
         System.out.println("Board Cleared");
+
         try {
-            if (Connection.figIndex == -1) {
-                showMessageDialog(null, "Can't get data from server", "Error", ERROR_MESSAGE);
-                //owner.dispose();
-                owner.table.stopGame();
-                owner.table.setVisible(false);
-                owner.custom.setVisible(true);
-                owner.bStartStop.state = true;
-                //owner.bStartStop.doClick();
-            } else {
-                fig = Figure.figures[Connection.figIndex];
+            owner.bStartStop.setEnabled(false);
+            owner.connection.giveNewFig();
+            while (owner.connection.figIndex == Figure.getFigIndex(fig)) {
+                System.out.print("");
             }
+            owner.bStartStop.setEnabled(true);
+            fig = Figure.figures[owner.connection.figIndex];
         } catch (Exception ex) {
-            showMessageDialog(null, "Can't get next figure from server", "Error", ERROR_MESSAGE);
-            ex.printStackTrace();
-            //owner.dispose();
-            owner.table.stopGame();
-            owner.table.setVisible(false);
-            owner.custom.setVisible(true);
-            owner.bStartStop.state = true;
-            //owner.bStartStop.doClick();
+            showMessageDialog(null, "Can't get next figure from server\nTry restarting app ", "Error", ERROR_MESSAGE);
+            owner.dispose();
         }
+//        try {
+//            if (Connection.figIndex == -1) {
+//                showMessageDialog(null, "Can't get data from server", "Error", ERROR_MESSAGE);
+//                //owner.dispose();
+//                owner.table.stopGame();
+//                owner.table.setVisible(false);
+//                owner.custom.setVisible(true);
+//                owner.bStartStop.state = true;
+//                //owner.bStartStop.doClick();
+//            } else {
+//                fig = Figure.figures[Connection.figIndex];
+//            }
+//        } catch (Exception ex) {
+//            showMessageDialog(null, "Can't get next figure from server", "Error", ERROR_MESSAGE);
+//            ex.printStackTrace();
+//            //owner.dispose();
+//            owner.table.stopGame();
+//            owner.table.setVisible(false);
+//            owner.custom.setVisible(true);
+//            owner.bStartStop.state = true;
+//            //owner.bStartStop.doClick();
+//        }
         repaint();
         play = true;
     }
@@ -107,12 +116,16 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
      */
     public void stopGame() {
         try {
-            Connection.figIndex = -1;
+            owner.connection.figIndex = -1;
             fig = Figure.getBlankFigure();
+//            owner.enemyLabel.setText("");
+//            owner.nameLabel.setText("");
             repaint();
-        } catch (Exception ignored) {
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
         play = false;
+        owner.connection.gameEnded();
     }
 
     /**
@@ -128,7 +141,7 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
             ColorUIResource color = (ColorUIResource) UIManager.get("ComboBox.background");
             ColorUIResource backColor = (ColorUIResource) UIManager.get("Panel.background");
             if (Math.abs(color.getRed() - backColor.getRed()) < 20 && Math.abs(color.getGreen() - backColor.getGreen()) < 20 && Math.abs(color.getBlue() - backColor.getBlue()) < 20) {
-                color = new ColorUIResource(FlatLaf.isLafDark() ? Color.WHITE : Color.BLACK);
+                color = new ColorUIResource(Color.BLACK);
             }
             // Делаем новые кисти.
             GradientPaint enabled = new GradientPaint(new Point(0, 0), new Color(color.getRed(), color.getGreen(),
@@ -274,9 +287,11 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
 
                     // Просим сервер выдать следующую фигуру.
                     try {
-                        connection.writeToServer("0 " + Connection.figIndex);
-                        Thread.sleep(50);
-                        fig = Figure.figures[Connection.figIndex];
+                        owner.connection.giveNewFig();
+                        while (owner.connection.figIndex == Figure.getFigIndex(fig)) {
+                            System.out.print("");
+                        }
+                        fig = Figure.figures[owner.connection.figIndex];
                     } catch (Exception ex) {
                         showMessageDialog(null, "Can't get next figure from server\nTry restarting app ", "Error", ERROR_MESSAGE);
                         owner.dispose();
