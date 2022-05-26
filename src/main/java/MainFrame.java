@@ -1,9 +1,10 @@
-import com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatMaterialDarkerContrastIJTheme;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.TimeZone;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
@@ -12,16 +13,17 @@ public class MainFrame extends JFrame {
 
     public JTextArea ip, port, time;
     JRadioButton second;
-    ButtonWImage start;
+    ButtonWImage start, top;
     // Уже бывавшие в использовании сервера закрытые порты.
     private ArrayList<Integer> usedPorts = new ArrayList<>();
 
     /**
      * Мейн метод, с которого начинается работа программы.
+     *
      * @param args - параметры запуска (не используются)
      */
     public static void main(String[] args) {
-        FlatMaterialDarkerContrastIJTheme.setup();
+        //FlatMaterialDarkerContrastIJTheme.setup();
         MainFrame frame = new MainFrame();
         frame.Init();
     }
@@ -31,6 +33,7 @@ public class MainFrame extends JFrame {
      * Метод, инициализирующий GUI игры.
      */
     public void Init() {
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         try {
             setIconImage(ImageIO.read(MainFrame.class.getResource("/icons/black.png")));
         } catch (Exception ignored) {
@@ -68,9 +71,26 @@ public class MainFrame extends JFrame {
         cons.gridx = 0;
         cons.gridy = 0;
         cons.gridheight = 4;
+        top = new ButtonWImage("/icons/top", "/icons/clock");
+        top.setPreferredSize(new Dimension(50, 50));
+        add(top, cons);
+        top.setToolTipText("Get all recordings from database");
+        try {
+            DataBaseConnection.init();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        top.addActionListener(e -> {
+            System.out.println("Data from derby DB:\n" + DataBaseConnection.getAllData());
+        });
+
+        cons.gridx = 0;
+        cons.gridy = 3;
+        cons.gridheight = 4;
         start = new ButtonWImage("/icons/start", "/icons/clock");
         start.setPreferredSize(new Dimension(50, 50));
         add(start, cons);
+        start.setToolTipText("Start server");
         start.addActionListener(e -> {
             // Обработка контента текстовых полей.
             int truePort = -1, trueTime = -1;
@@ -120,7 +140,7 @@ public class MainFrame extends JFrame {
 
         cons.gridy = 3;
         time = new JTextArea();
-        time.setText("2");
+        time.setText("5");
         time.setPreferredSize(new Dimension(300, 25));
 
         timeLabel = new JLabel("Session time: ");
@@ -130,6 +150,13 @@ public class MainFrame extends JFrame {
 
         pack();
         setLocationRelativeTo(null);
+
+        try {
+            DataBaseConnection.init();
+        } catch (SQLException | ClassNotFoundException ex) {
+            System.out.println("Cant initialize database");
+            top.setEnabled(false);
+        }
     }
 
     /**
@@ -156,7 +183,8 @@ public class MainFrame extends JFrame {
             }
             try {
                 Thread.sleep(100);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
         super.dispose();

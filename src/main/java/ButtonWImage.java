@@ -1,4 +1,4 @@
-import com.formdev.flatlaf.*;
+
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -56,12 +56,12 @@ public class ButtonWImage extends JButton {
                 BufferedImage img;
                 if (state) {
                     img = toBufferedImage(ImageIO.read(Objects.requireNonNull(
-                                    ButtonWImage.class.getResource(!FlatLaf.isLafDark() ? path + ".png" : path + "-white.png"))).
+                                    ButtonWImage.class.getResource(path + ".png"))).
                             getScaledInstance((int) Math.round(getHeight() * 0.8), (int) Math.round(getHeight() * 0.8),
                                     Image.SCALE_SMOOTH));
                 } else {
                     img = toBufferedImage(ImageIO.read(Objects.requireNonNull(
-                                    ButtonWImage.class.getResource(!FlatLaf.isLafDark() ? alterPath + ".png" : alterPath + "-white.png"))).
+                                    ButtonWImage.class.getResource( alterPath + ".png" ))).
                             getScaledInstance((int) Math.round(getHeight() * 0.8), (int) Math.round(getHeight() * 0.8),
                                     Image.SCALE_SMOOTH));
                 }

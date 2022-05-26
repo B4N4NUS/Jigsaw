@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.io.*;
 import java.net.*;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.Timer;
 
@@ -24,16 +25,24 @@ public class Server extends Thread {
     String firstName = null;
     String secondName = null;
 
+    String firstTimeZone = null;
+    String secondTimeZone = null;
+
+    boolean firstReady = false;
+    boolean secondReady = false;
+
     boolean sendNames = true;
+    boolean startReceiving = false;
 
     int firstIndex = 0;
     int secondIndex = 0;
 
     /**
      * Конструктор.
+     *
      * @param port - порт.
      * @param name - имя потока.
-     * @param gui - главное окно приложения.
+     * @param gui  - главное окно приложения.
      */
     public Server(int port, String name, MainFrame gui) {
         super(name);
@@ -47,6 +56,8 @@ public class Server extends Thread {
      */
     @Override
     public void run() {
+
+
         try {
             // Проверяем открытость и неизменность порта.
             if (serverSocket == null) {
@@ -74,42 +85,25 @@ public class Server extends Thread {
             System.out.println("\nFigure list was generated");
             System.out.println("Server was created\nWaiting for connection");
 
-            // Создаем поток первого игрока.
+
             Thread first = new Thread() {
                 @Override
                 public void run() {
-                    // Нынешняя фигура.
-                    int fig = -1;
-                    // Имя игрока.
-                    String name = "";
-
-                    System.out.println("[P1] Thread started");
-                    // Ждем подключение игрока.
                     try {
                         firstSocket = serverSocket.accept();
-                        firstSocket.setSoTimeout(1000);
-                        System.out.println("[P1] Connection gained");
+                        writeToClient("-");
+                        firstLost = false;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return;
+                    }
 
-                        // Высылаем ему первую фигуру.
-                        writeToClient("0 " + figs[secondIndex++]);
-                        writeToClient("2 " + Integer.parseInt(gui.time.getText()));
-                    } catch (IOException ignored) {}
-
-                    // Крутим пока игра идет.
                     while (running) {
                         try {
                             // Если второй игрок отключился.
                             if (secondLost) {
                                 secondLost = false;
                                 writeToClient("4 second player is dead lol");
-                            }
-                            // Если оба игрока подключились.
-                            if (firstName != null && secondName != null && sendNames) {
-                                sendNames = false;
-                                writeToClient("3 " + secondName);
-                                if (secondPlayer) {
-                                    writeToClient2("3 " + firstName);
-                                }
                             }
 
                             // Начинаем читать информацию из сокета.
@@ -118,97 +112,136 @@ public class Server extends Thread {
 
                             // Получаем всю информацию.
                             while (in.ready()) {
-                                System.out.println("\n[P1] Buffer:");
+                                System.out.println("[P1] Buffer:");
                                 buf.add(in.readLine());
                                 System.out.println(buf.get(buf.size() - 1));
+                                if (buf.get(buf.size() - 1).equals("-")) {
+                                    System.out.println("[P1] Got ping-pong");
+                                    writeToClient("-");
+                                }
                             }
 
                             for (String s : buf) {
                                 switch (s.charAt(0)) {
-                                    // Если это сообщение о получении новой фигуры.
                                     case '0' -> {
-                                        fig = Integer.parseInt(s.split(" ")[1]);
-                                        writeToClient("0 " + figs[secondIndex++]);
-                                        writeToClient("1 " + (secondIndex - 1));
-                                        System.out.println("[P1] Sent (0" + figs[secondIndex - 1] + ")");
+                                        while (!startReceiving) {
+                                            System.out.print("");
+                                        }
+                                        writeToClient("0 " + figs[firstIndex++]);
+                                        System.out.println("[P1] Gave new fig (" + figs[firstIndex - 1] + ")");
                                     }
-                                    // Если это сообщение об имени игрока.
+                                    case '1' -> {
+                                        firstName = s.split(" ")[1];
+                                        System.out.println("[P1] Got name (" + firstName + ")");
+                                    }
+
+                                    case '2' -> {
+                                        firstReady = true;
+                                        System.out.println("[P1] " + firstName + " ready!");
+                                        if (secondPlayer) {
+                                            if (secondReady) {
+                                                startReceiving = true;
+                                            }
+                                        } else {
+                                            startReceiving = true;
+                                        }
+                                    }
                                     case '3' -> {
-                                        name = s.split(" ")[1];
-                                        firstName = name;
-                                        System.out.println("[P1] Got name (" + name + ")");
-                                    }
-                                    // Если это сообщение об отключении игрока.
-                                    case '4' -> {
+                                        System.out.println("[P1] " + firstName + " ended game!");
+                                        if (secondPlayer) {
+                                            writeToClient2("4 first player is dead");
+                                        }
                                         firstLost = true;
-                                        System.out.println("[P1] Lost connection");
+                                        running = false;
+                                    }
+                                    case '5' -> {
+                                        firstTimeZone = s.substring(2);
+                                    }
+                                    case '9' -> {
+                                        writeToClient("9 " + DataBaseConnection.getDataForClient(firstTimeZone));
+                                        System.out.println("[P1] Sent top games");
                                     }
                                 }
                             }
-                            // Отсылаем игроку счет соперника.
-                            writeToClient("6 " + firstIndex);
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
                     }
                     System.out.println("[P1] Thread ended");
                 }
             };
-
-            // Создаем поток второго игрока.
             Thread second = new Thread() {
                 @Override
                 public void run() {
-                    int fig = -1;
-                    String name = "";
-
-                    System.out.println("[P2] Thread started");
                     try {
                         secondSocket = serverSocket.accept();
-                        secondSocket.setSoTimeout(1000);
-                        System.out.println("[P2] Connection gained");
-
-                        writeToClient2("0 " + figs[firstIndex++]);
-                        writeToClient2("2 " + Integer.parseInt(gui.time.getText()));
-                    } catch (IOException ignored) {
+                        writeToClient2("-");
+                        secondLost = false;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return;
                     }
 
                     while (running) {
                         try {
+                            // Если второй игрок отключился.
                             if (firstLost) {
                                 firstLost = false;
-                                writeToClient2("4 first player is dead lol");
+                                writeToClient2("4 second player is dead lol");
                             }
 
+                            // Начинаем читать информацию из сокета.
                             BufferedReader in = new BufferedReader(new InputStreamReader(secondSocket.getInputStream()));
                             ArrayList<String> buf = new ArrayList<>();
 
+                            // Получаем всю информацию.
                             while (in.ready()) {
-                                System.out.println("\n[P1] Buffer:");
+                                System.out.println("[P2] Buffer:");
                                 buf.add(in.readLine());
                                 System.out.println(buf.get(buf.size() - 1));
+                                if (buf.get(buf.size() - 1).equals("-")) {
+                                    System.out.println("[P2] Got ping-pong");
+                                    writeToClient2("-");
+                                }
                             }
 
                             for (String s : buf) {
-                                //System.out.println("[P2] Got " + s);
                                 switch (s.charAt(0)) {
                                     case '0' -> {
-                                        fig = Integer.parseInt(s.split(" ")[1]);
-                                        writeToClient2("0 " + figs[firstIndex++]);
-                                        writeToClient2("1 " + (firstIndex - 1));
-                                        System.out.println("[P2] Sent (" + figs[firstIndex - 1] + ")");
+                                        while (!startReceiving) {
+                                            System.out.print("");
+                                        }
+                                        writeToClient2("0 " + figs[secondIndex++]);
+                                        System.out.println("[P2] Gave new fig (" + figs[secondIndex - 1] + ")");
+                                    }
+                                    case '1' -> {
+                                        secondName = s.split(" ")[1];
+                                        System.out.println("[P2] Got name (" + secondName + ")");
+                                    }
+                                    case '2' -> {
+                                        secondReady = true;
+                                        System.out.println("[P2] " + secondName + " ready!");
+
+                                        if (firstReady) {
+                                            startReceiving = true;
+                                        }
                                     }
                                     case '3' -> {
-                                        name = s.split(" ")[1];
-                                        secondName = name;
-                                        System.out.println("[P2] Got name (" + name + ")");
-                                    }
-                                    case '4' -> {
+                                        System.out.println("[P2] " + secondName + " ended game!");
+                                        writeToClient("4 second player is dead");
                                         secondLost = true;
-                                        System.out.println("[P2] Lost connection");
+                                        running = false;
+                                    }
+                                    case '5' -> {
+                                        secondTimeZone = s.substring(2);
+                                    }
+                                    case '9' -> {
+                                        writeToClient2("9 " + DataBaseConnection.getDataForClient(secondTimeZone));
+                                        System.out.println("[P2] Sent top games");
                                     }
                                 }
                             }
-                            writeToClient2("6 " + secondIndex);
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
                     }
                     System.out.println("[P2] Thread ended");
                 }
@@ -222,33 +255,38 @@ public class Server extends Thread {
                     System.out.println("Time has come");
                     if (firstName != null) {
                         if (secondPlayer & secondName != null) {
-                            if (secondIndex >= firstIndex) {
-                                writeToClient("5 won "+ secondIndex + " " + firstIndex);
-                                writeToClient2("5 lost "+ firstIndex + " " + secondIndex);
+                            if (secondIndex <= firstIndex) {
+                                writeToClient("5 won " + firstIndex + " " + secondIndex);
+                                writeToClient2("5 lost " + secondIndex + " " + firstIndex);
+                                DataBaseConnection.addNewData(firstName, LocalDateTime.now(), firstIndex - 1, Integer.parseInt((gui.time.getText())));
                             } else {
-                                writeToClient("5 lost "+ secondIndex + " " + firstIndex);
-                                writeToClient2("5 won "+ firstIndex + " " + secondIndex);
+                                writeToClient("5 lost " + firstIndex + " " + secondIndex);
+                                writeToClient2("5 won " + secondIndex + " " + firstIndex);
+                                DataBaseConnection.addNewData(secondName, LocalDateTime.now(), secondIndex - 1, Integer.parseInt((gui.time.getText())));
                             }
                             running = false;
                             cancel();
                         }
                         if (!secondPlayer) {
-                            writeToClient("5 won " + secondIndex + " " + firstIndex);
+                            writeToClient("5 won " + firstIndex + " " + firstIndex);
+                            DataBaseConnection.addNewData(firstName, LocalDateTime.now(), firstIndex - 1, Integer.parseInt((gui.time.getText())));
                             running = false;
                             cancel();
                         }
                     }
+                    System.out.println(firstName + " [First] score: " + firstIndex);
+                    System.out.println(secondName + "[Second] score: " + secondIndex);
+                    cancel();
                 }
             };
             TimerTask startTimer = new TimerTask() {
                 @Override
                 public void run() {
-                    //System.out.println("Started timer");
-                    if (firstName != null) {
-                        if (!secondPlayer || secondName != null) {
-                            timer.schedule(task, Integer.parseInt(gui.time.getText()) * 1000, 100);
-                            cancel();
-                        }
+
+                    if (!secondPlayer & firstReady || firstReady & secondReady) {
+                        System.out.println("Started game");
+                        timer.schedule(task, Integer.parseInt(gui.time.getText()) * 1000, 100);
+                        cancel();
                     }
                 }
             };
@@ -261,7 +299,11 @@ public class Server extends Thread {
                     if (secondIndex == 0 || (secondPlayer && firstIndex == 0)) {
                         running = false;
                         System.out.println(secondIndex + " " + firstIndex);
-                        showMessageDialog(null, "No one connected to server in " + timeout + " seconds\nShutting down", "Error", JOptionPane.WARNING_MESSAGE);
+                        showMessageDialog(gui, "No one connected to server in " + timeout + " seconds\nShutting down", "Error", JOptionPane.WARNING_MESSAGE);
+                        writeToClient("5 dead");
+                        if (secondName != null) {
+                            writeToClient2("5 dead");
+                        }
                     }
                     cancel();
                 }
@@ -270,6 +312,7 @@ public class Server extends Thread {
             // Старт потоков игроков.
             first.start();
             if (secondPlayer) {
+                System.out.println("Waiting for second player");
                 second.start();
             }
 
@@ -277,7 +320,7 @@ public class Server extends Thread {
             Timer timerStop = new Timer("stopServer");
             timerStop.schedule(stopServer, timeout * 1000, 1);
             System.out.println("Started delay");
-            timer.schedule(startTimer, 0, 1);
+            timer.schedule(startTimer, 0, 10);
 
             // Замораживаем поток пока игроки не доиграют.
             while (running) {
@@ -292,11 +335,11 @@ public class Server extends Thread {
             secondName = null;
             firstLost = false;
             secondLost = false;
-            firstSocket = new Socket();
-            secondSocket = new Socket();
             gui.reboot();
-        } catch (Exception e) {
-            e.printStackTrace();
+            firstSocket = null;
+            secondSocket = null;
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
 
@@ -309,7 +352,8 @@ public class Server extends Thread {
             firstSocket.close();
             serverSocket.close();
             System.out.println("Sockets closed successfully");
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
 
     /**
@@ -329,6 +373,7 @@ public class Server extends Thread {
 
     /**
      * Метод, пишущий информацию в сокет первого игрока.
+     *
      * @param text - информация.
      */
     public void writeToClient(String text) {
@@ -338,8 +383,10 @@ public class Server extends Thread {
         } catch (Exception ignored) {
         }
     }
+
     /**
      * Метод, пишущий информацию в сокет второго игрока.
+     *
      * @param text - информация.
      */
     public void writeToClient2(String text) {
