@@ -2,6 +2,8 @@ import javax.swing.*;
 import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -38,9 +40,6 @@ public class Connection extends Thread {
         this.name = name;
         this.owner = owner;
         this.ipAdress = ipAdress;
-
-        TimeZone tz = TimeZone.getTimeZone("<local-time-zone>");
-        System.out.println(tz);
     }
 
     public void gameEnded() {
@@ -85,7 +84,7 @@ public class Connection extends Thread {
                         // Крутим пока в буфере есть данные.
                         while (in.ready()) {
                             buf.add(in.readLine());
-                            System.out.println("Buffer: " + buf.get(buf.size() - 1));
+                            System.out.println("Pre Game Buffer: " + buf.get(buf.size() - 1));
                         }
                         // Обрабатываем полученные данные.
                         for (String s : buf) {
@@ -101,6 +100,20 @@ public class Connection extends Thread {
                                     owner.repaint();
                                     owner.buttonsPane.repaint();
                                     owner.table.repaint();
+                                }
+                                case '5' -> {
+                                    playing = false;
+                                    running = false;
+                                    owner.changeVisibleElems(true);
+                                    //owner.bStartStop.doClick();
+
+                                    showMessageDialog(owner, "Lost connection with server!", "Eror", ERROR_MESSAGE);
+                                    try {
+                                        closeSocket();
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+
+                                    }
                                 }
                                 case '9' -> {
                                     String rawTop = s.substring(2);
@@ -170,8 +183,6 @@ public class Connection extends Thread {
                                             }
                                             // Сервер не закончил свою работу и был закрыт.
                                             case "dead" -> {
-
-
                                                 showMessageDialog(owner, "Lost connection with server!", "Eror", ERROR_MESSAGE);
                                                 try {
                                                     closeSocket();
@@ -233,11 +244,12 @@ public class Connection extends Thread {
 //           (new ObjectOutputStream(socket.getOutputStream())).flush();
 //            (new FilterOutputStream(socket.getOutputStream())).flush();
 //            (new BufferedOutputStream(socket.getOutputStream())).flush();
-            writeToServer("awdaw");
             throw new ConnectException("Server is not responding to ping-pong packet");
         }
 
         writeToServer("1 " + name);
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        writeToServer("5 " + df.getTimeZone().getID());
         playing = false;
         running = true;
         System.out.println("opened socket");
