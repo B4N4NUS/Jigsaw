@@ -1,12 +1,10 @@
 import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
-import java.awt.dnd.DropTarget;
-import java.awt.dnd.DropTargetListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.sql.SQLOutput;
+import java.io.IOException;
 
 import static javax.swing.JOptionPane.ERROR_MESSAGE;
 import static javax.swing.JOptionPane.showMessageDialog;
@@ -16,7 +14,7 @@ import static javax.swing.JOptionPane.showMessageDialog;
  */
 public class Table extends JPanel implements MouseListener, MouseMotionListener {
     // Поле.
-    private static int[][] field = new int[9][9];
+    private static final int[][] field = new int[9][9];
     // Нынешний счет.
     public int score = 0;
     // Идет ли сейчас игра.
@@ -76,37 +74,33 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
         try {
             owner.bStartStop.setEnabled(false);
             owner.connection.giveNewFig();
-            while (owner.connection.figIndex == Figure.getFigIndex(fig)) {
+            long start = System.currentTimeMillis();
+            while (owner.connection.figIndex == Figure.getFigIndex(fig) && start+5000 > System.currentTimeMillis()) {
                 System.out.print("");
             }
+            if (start+5000 < System.currentTimeMillis()) {
+                owner.connection.playing = false;
+                owner.connection.running = false;
+                owner.changeVisibleElems(true);
+                //owner.bStartStop.doClick();
+
+                showMessageDialog(owner, "Lost connection with server!", "Eror", ERROR_MESSAGE);
+                try {
+                    owner.connection.closeSocket();
+                } catch (IOException e) {
+                    e.printStackTrace();
+
+                }
+                return;
+            }
+            owner.startTimer = true;
             owner.bStartStop.setEnabled(true);
             fig = Figure.figures[owner.connection.figIndex];
         } catch (Exception ex) {
-            showMessageDialog(null, "Can't get next figure from server\nTry restarting app ", "Error", ERROR_MESSAGE);
+            showMessageDialog(owner, "Can't get next figure from server\nShutting down ", "Error", ERROR_MESSAGE);
+            ex.printStackTrace();
             owner.dispose();
         }
-//        try {
-//            if (Connection.figIndex == -1) {
-//                showMessageDialog(null, "Can't get data from server", "Error", ERROR_MESSAGE);
-//                //owner.dispose();
-//                owner.table.stopGame();
-//                owner.table.setVisible(false);
-//                owner.custom.setVisible(true);
-//                owner.bStartStop.state = true;
-//                //owner.bStartStop.doClick();
-//            } else {
-//                fig = Figure.figures[Connection.figIndex];
-//            }
-//        } catch (Exception ex) {
-//            showMessageDialog(null, "Can't get next figure from server", "Error", ERROR_MESSAGE);
-//            ex.printStackTrace();
-//            //owner.dispose();
-//            owner.table.stopGame();
-//            owner.table.setVisible(false);
-//            owner.custom.setVisible(true);
-//            owner.bStartStop.state = true;
-//            //owner.bStartStop.doClick();
-//        }
         repaint();
         play = true;
     }
@@ -118,8 +112,6 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
         try {
             owner.connection.figIndex = -1;
             fig = Figure.getBlankFigure();
-//            owner.enemyLabel.setText("");
-//            owner.nameLabel.setText("");
             repaint();
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -164,7 +156,7 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                 }
             }
 
-            Graphics scratchGraphics = (g == null) ? null : g.create();
+            Graphics scratchGraphics = g.create();
             try {
                 Graphics2D g2 = (Graphics2D) g.create();
                 RenderingHints qualityHints = new RenderingHints(RenderingHints.KEY_ANTIALIASING,
@@ -178,7 +170,6 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                     for (int j = 0; j < 9 * MainFrame.prefY; j += MainFrame.prefY) {
                         if (field[i / MainFrame.prefX][j / MainFrame.prefY] == 1) {
                             g2.fillRoundRect(i + 2, j + 2, MainFrame.prefX - 3, MainFrame.prefY - 3, 5, 5);
-                        } else {
                         }
                         g2.drawRoundRect(i + 2, j + 2, MainFrame.prefX - 3, MainFrame.prefY - 3, 5, 5);
                     }
@@ -288,8 +279,24 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                     // Просим сервер выдать следующую фигуру.
                     try {
                         owner.connection.giveNewFig();
-                        while (owner.connection.figIndex == Figure.getFigIndex(fig)) {
+                        long start = System.currentTimeMillis();
+                        while (owner.connection.figIndex == Figure.getFigIndex(fig) && start+500 > System.currentTimeMillis()) {
                             System.out.print("");
+                        }
+                        if (start+500 < System.currentTimeMillis()) {
+                            System.out.println(System.currentTimeMillis() + " " + start);
+                            owner.connection.playing = false;
+                            owner.connection.running = false;
+                            owner.changeVisibleElems(true);
+                            //owner.bStartStop.doClick();
+
+                            showMessageDialog(owner, "Lost connection with server!", "Eror", ERROR_MESSAGE);
+                            try {
+                                owner.connection.closeSocket();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+
+                            }
                         }
                         fig = Figure.figures[owner.connection.figIndex];
                     } catch (Exception ex) {
@@ -342,9 +349,7 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                 y1 = my - offsetY;
                 x2 = x1 + size;
                 y2 = y1 + size;
-                //square = new Rectangle2D.Double(x1, y1, size, size);
                 repaint();
-                //System.out.println("SOSU");
             }
         }
     }

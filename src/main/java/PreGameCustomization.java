@@ -1,6 +1,5 @@
 import javax.swing.*;
 import java.awt.*;
-import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Random;
 
@@ -9,7 +8,7 @@ import static javax.swing.JOptionPane.showMessageDialog;
 
 public class PreGameCustomization extends JPanel {
     MainFrame gui;
-    static public JTextArea name, port, ip;
+    public JTextArea name, port, ip;
 
     /**
      * Конструктор
@@ -29,12 +28,10 @@ public class PreGameCustomization extends JPanel {
         cons.insets = new Insets(5, 10, 5, 5);
         cons.anchor = GridBagConstraints.SOUTH;
         cons.fill = GridBagConstraints.BOTH;
-        //add(connected);
 
-        JLabel nameLabel, portLabel, ipLabel;
         JButton connect;
 
-        add(nameLabel = new JLabel("Name: "), cons);
+        add(new JLabel("Name: "), cons);
 
         cons.gridx = 1;
 
@@ -46,7 +43,7 @@ public class PreGameCustomization extends JPanel {
         cons.gridx = 0;
         cons.gridy = 1;
         cons.weightx = 0;
-        add(ipLabel = new JLabel("IP:   "), cons);
+        add(new JLabel("IP:   "), cons);
 
         cons.gridx = 1;
         cons.weightx = 1;
@@ -57,7 +54,7 @@ public class PreGameCustomization extends JPanel {
         cons.gridx = 0;
         cons.gridy = 2;
         cons.weightx = 0;
-        add(portLabel = new JLabel("Port: "), cons);
+        add(new JLabel("Port: "), cons);
 
         cons.gridx = 1;
         cons.weightx = 1;
@@ -80,23 +77,11 @@ public class PreGameCustomization extends JPanel {
                 gui.changeVisibleElems(false);
             }catch (ConnectException ex) {
                 showMessageDialog(null, "Cant connect to server", "Error", ERROR_MESSAGE);
-                //ex.printStackTrace();
-//                try {
-//                    gui.connection.socket.getOutputStream().flush();
-//                } catch (IOException exc) {
-//                    exc.printStackTrace();
-//                }
             }
             catch (Exception ex) {
                 ex.printStackTrace();
             }
         });
-        //setBackground(Color.red);
-
-
-        //ip.setPreferredSize(new Dimension(300, 25));
-        //port.setPreferredSize(new Dimension(300, 25));
-        //name.setPreferredSize(new Dimension(300, 25));
     }
 
 }

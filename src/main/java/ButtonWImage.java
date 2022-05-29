@@ -1,14 +1,12 @@
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.border.Border;
 import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.ImageObserver;
 import java.io.IOException;
 import java.util.Objects;
 
-// Класс кастомной кнопочки, написанный специально для использования с FlatLaf.
+// Класс кастомной кнопочки с картинкой.
 public class ButtonWImage extends JButton {
 
     private final String path;
@@ -17,7 +15,8 @@ public class ButtonWImage extends JButton {
 
     /**
      * Конструктор.
-     * @param path - путь до картинки.
+     *
+     * @param path      - путь до картинки.
      * @param alterPath - путь до альтернативной картинки.
      */
     public ButtonWImage(String path, String alterPath) {
@@ -25,26 +24,11 @@ public class ButtonWImage extends JButton {
         this.path = path;
         this.alterPath = alterPath;
         state = true;
-//        setBorder(new Border() {
-//            @Override
-//            public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-//                g.drawRoundRect(x, y, width-1, height-1, 20, 20);
-//            }
-//
-//            @Override
-//            public Insets getBorderInsets(Component c) {
-//                return new Insets(21, 21, 22, 20);
-//            }
-//
-//            @Override
-//            public boolean isBorderOpaque() {
-//                return false;
-//            }
-//        });
     }
 
     /**
      * Метод каста из Image в BufferedImage
+     *
      * @param img - изначальная картинка.
      * @return - переделанная картинка.
      */
@@ -64,14 +48,12 @@ public class ButtonWImage extends JButton {
     protected void paintComponent(Graphics g) {
         if (ui != null) {
             ColorUIResource color = (ColorUIResource) UIManager.get("ComboBox.background");
-            ColorUIResource fontColor = (ColorUIResource) UIManager.get("ComboBox.foreground");
             Graphics scratchGraphics = (g == null) ? null : g.create();
             try {
-                String text = getText();
                 BufferedImage img;
                 if (state) {
                     img = toBufferedImage(ImageIO.read(Objects.requireNonNull(
-                                    ButtonWImage.class.getResource( path + ".png"))).
+                                    ButtonWImage.class.getResource(path + ".png"))).
                             getScaledInstance((int) Math.round(getHeight() * 0.8), (int) Math.round(getHeight() * 0.8),
                                     Image.SCALE_SMOOTH));
                 } else {
@@ -92,7 +74,7 @@ public class ButtonWImage extends JButton {
                         color.getBlue()), new Point(0, getHeight()), new Color(color.getRed(), color.getGreen(),
                         color.getBlue())));
                 g2.fillRoundRect(2, 2, getHeight() - 3, getHeight() - 3, 20, 20);
-                g2.drawImage(img, (int) Math.round(getHeight() * 0.1), (int) Math.round(getHeight() * 0.1 ),
+                g2.drawImage(img, (int) Math.round(getHeight() * 0.1), (int) Math.round(getHeight() * 0.1),
                         (img1, infoflags, x, y, width, height) -> false);
 
                 g2.dispose();

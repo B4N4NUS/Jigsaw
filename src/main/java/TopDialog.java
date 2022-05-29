@@ -1,12 +1,10 @@
-import org.w3c.dom.ls.LSOutput;
-
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
 
 public class TopDialog extends JDialog {
     MainFrame owner;
     String[] top;
+
     public TopDialog(MainFrame owner, String[] top) {
         super(owner, true);
         this.owner = owner;
@@ -16,8 +14,8 @@ public class TopDialog extends JDialog {
 
     public void build() {
         setLocationRelativeTo(null);
-        setLayout(new BoxLayout(getContentPane(), 1));
-        setTitle("Top "+top.length + " Games");
+        setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
+        setTitle("Top " + top.length + " Games");
         JLabel header = new JLabel(" Place |   Login   |              Date               | Score | Duration ");
         System.out.println(header.getText().length());
         JLabel text;
@@ -25,7 +23,7 @@ public class TopDialog extends JDialog {
         add(header);
         for (int i = 0; i < top.length; i++) {
             if (i == 9) {
-                text = new JLabel(String.format("%8s",i+1) + " | " + top[i]);
+                text = new JLabel(String.format("%8s", i + 1) + " | " + top[i]);
             } else {
                 text = new JLabel(String.format("%9s", i + 1) + " | " + top[i]);
             }

@@ -1,5 +1,3 @@
-import java.util.Random;
-
 // Склад всех видов фигур.
 public class Figure {
     static final int[][][] figures = {
