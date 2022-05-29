@@ -1,11 +1,8 @@
-
-
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.ImageObserver;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -49,10 +46,8 @@ public class ButtonWImage extends JButton {
     protected void paintComponent(Graphics g) {
         if (ui != null) {
             ColorUIResource color = (ColorUIResource) UIManager.get("ComboBox.background");
-            ColorUIResource fontColor = (ColorUIResource) UIManager.get("ComboBox.foreground");
             Graphics scratchGraphics = (g == null) ? null : g.create();
             try {
-                String text = getText();
                 BufferedImage img;
                 if (state) {
                     img = toBufferedImage(ImageIO.read(Objects.requireNonNull(

@@ -1,11 +1,7 @@
-
 import java.sql.*;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.Date;
 
@@ -17,56 +13,58 @@ public class DataBaseConnection {
 
     private static Connection connection;
 
-    public static void main(String[] args) throws SQLException, ClassNotFoundException {
-        init();
-        Random rand = new Random();
-        LocalDateTime now = LocalDateTime.now();
-        for (int i = 0; i < 3; i++) {
-            addNewData("name" + i, now, rand.nextInt(10), rand.nextInt(10));
-            //getDataFromBase(null);
-        }
-    }
-
+    /**
+     * Установка связи с БД.
+     * @throws ClassNotFoundException - появляется при отсутствии драйвера для работы с Derby.
+     * @throws SQLException - появляется при невозможности подключиться к БД.
+     */
     public static void init() throws ClassNotFoundException, SQLException {
         Class.forName(DRIVER);
         try {
             connection = DriverManager.getConnection(CREATE);
-            connection.createStatement().execute("create table highscores(id varchar(40), login varchar(20), date varchar(40), score INTEGER, time INTEGER )");
+            connection.createStatement().execute("create table highscores(id varchar(40), login varchar(20), " +
+                    "date varchar(40), score INTEGER, time INTEGER )");
         } catch (Exception ex) {
             connection = DriverManager.getConnection(OPEN);
         }
     }
 
-    public static boolean addNewData(String data1, LocalDateTime data2, int data3, int data4) {
+    /**
+     * Добавление новых данных в БД.
+     * @param name - имя игрока.
+     * @param score - счет игрока.
+     * @param time - длительность игры.
+     */
+    public static void addNewData(String name, int score, int time) {
         try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss:SSS z");
             Date date = new Date();
             DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-            // Use Madrid's time zone to format the date in
             df.setTimeZone(TimeZone.getTimeZone("Среднее время по Гринвичу"));
             System.out.println(df.getTimeZone().getDisplayName());
 
-            System.out.println("Date and time in UTC-0: " + df.format(date));
-            connection.createStatement().execute("insert into highscores values" + "('" + UUID.randomUUID() + "','" + data1 + "','" + df.format(date) + "'," + data3 + "," + data4 + ")");
-            return true;
+            System.out.println("[DB] Date and time in UTC-0: " + df.format(date));
+            connection.createStatement().execute("insert into highscores values" + "('" + UUID.randomUUID() +
+                    "','" + name + "','" + df.format(date) + "'," + score + "," + time + ")");
+            System.out.println("[DB] Data successfully added to database <playerdata>");
         } catch (Exception ex) {
             ex.printStackTrace();
-            return false;
         }
     }
 
+    /**
+     * Метод, возвращающий все данные из БД.
+     * @param timeZone - временная зона игрока.
+     * @return - список всех записей в БД.
+     * @throws SQLException - прокидывается при ошибке подключения к БД.
+     * @throws ParseException - прокидывается при ошибке в парсе данных.
+     */
     public static ArrayList<Data> getDataFromBase(String timeZone) throws SQLException, ParseException {
         Statement statement = connection.createStatement();
         ResultSet resultSet = statement.executeQuery(SQL_STATEMENT);
-        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-        int columnCount = resultSetMetaData.getColumnCount();
-        //System.out.println("\n\n");
         ArrayList<Data> table = new ArrayList<>();
         Data dummy = new Data();
-        for (int i = 1; i < columnCount + 1; i++) {
-            //System.out.print(resultSetMetaData.getColumnName(i) + "\t");
-        }
+
         while (resultSet.next()) {
             dummy.id = resultSet.getString(1);
             dummy.login = resultSet.getString(2);
@@ -75,58 +73,54 @@ public class DataBaseConnection {
 
                 Date trueDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(dummy.date);
                 DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                //df.setTimeZone(TimeZone.getTimeZone("Среднее время по Гринвичу"));
-                //System.out.println("Time Zone = " + timeZone);
-                //System.out.println("Table Time = " + dummy.date);
                 df.setTimeZone(TimeZone.getTimeZone(timeZone));
                 dummy.date = df.format(trueDate);
-                //System.out.println("New Time = " + dummy.date);
             }
             dummy.score = Integer.parseInt(resultSet.getString(4));
             dummy.time = Integer.parseInt(resultSet.getString(5));
             table.add(dummy);
             dummy = new Data();
-
-            //System.out.print("\n");
-            for (int i = 1; i < columnCount + 1; i++) {
-                //System.out.print(resultSet.getString(i) + "\t");
-            }
         }
         table.sort(new Data());
-        //System.out.println("\n\n\n\nData:");
-        for (int i = 0; i < table.size(); i++) {
-            //System.out.println(table.get(i).toString());
-        }
         return table;
     }
 
+    /**
+     * Метод, возвращающий все записи мз БД.
+     * @return - строка со всеми данными БД.
+     */
     public static String getAllData() {
         try {
             ArrayList<Data> all = getDataFromBase(null);
-            String data = "";
-            for (int i = 0; i < all.size(); i++) {
-                data += all.get(i).toString() + "\n";
+            StringBuilder data = new StringBuilder();
+            for (Data value : all) {
+                data.append(value.toString()).append("\n");
             }
-            return data;
+            return data.toString();
         } catch (Exception ex) {
             return null;
         }
     }
 
+    /**
+     * Метод, возвращающий лишь последние 10 отсортированных записей из БД.
+     * @param timeZone - временная зона игрока.
+     * @return - строка топом записей из БД.
+     */
     public static String getDataForClient(String timeZone) {
         try {
             ArrayList<Data> top = getDataFromBase(timeZone);
             while (top.size() > 10) {
                 top.remove(10);
             }
-            String str = "";
-            for(int i = 0; i < top.size(); i++) {
-                str += top.get(i).getPrettyString()+"\b";
+            StringBuilder str = new StringBuilder();
+            for (Data data : top) {
+                str.append(data.getPrettyString()).append("\b");
             }
-            if (str.equals("")) {
+            if (str.toString().equals("")) {
                 return null;
             }
-            return str;
+            return str.toString();
         } catch (Exception ex) {
             ex.printStackTrace();
             return null;
@@ -134,6 +128,9 @@ public class DataBaseConnection {
     }
 }
 
+/**
+ * Класс для работы с данными из БД.
+ */
 class Data implements Comparator<Data> {
     String id;
     String login;
@@ -141,24 +138,29 @@ class Data implements Comparator<Data> {
     int score;
     int time;
 
+    /**
+     * Метод для сортировки класса.
+     * @param f - первый объект.
+     * @param s - второй объект.
+     * @return - результат сравнения.
+     */
     @Override
     public int compare(Data f, Data s) {
-        //DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         try {
             Date dateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(f.date);
             Date dateTime2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(s.date);
-            //System.out.println("started comparing");
+            // Сравниваем по времени.
             if (dateTime.equals(dateTime2)) {
-                //System.out.println("Date equals");
+                // Сравниваем по времени игры.
                 if (f.time == s.time) {
-                    //System.out.println("time equals");
+                    // Сравниваем по очкам.
                     if (f.score > s.score) {
                         return -1;
                     } else {
                         return 1;
                     }
                 } else {
-                    //System.out.println("Comparing times: " + (f.time > s.time) + "    " + f.time + " " + s.time);
+                    // Сравниваем по времени игры.
                     if (f.time > s.time) {
                         return -1;
                     } else {
@@ -166,22 +168,28 @@ class Data implements Comparator<Data> {
                     }
                 }
             } else {
-                //System.out.println("Comparing dates: " + dateTime.compareTo(dateTime2));
                 return -1 * dateTime.compareTo(dateTime2);
             }
-        }catch (Exception ex) {
+        } catch (Exception ex) {
             ex.printStackTrace();
             return 0;
         }
     }
 
+    /**
+     * Переопределенный метод перевода инстанса класса в строку.
+     * @return - строка.
+     */
     @Override
     public String toString() {
         return id + "\t" + login + "\t" + date + "\t" + score + "\t" + time;
     }
 
+    /**
+     * Метод, возвращающий упрощенный вид строки инстанца класса.
+     * @return - строка с меньшим количеством полей класса.
+     */
     public String getPrettyString() {
-        //System.out.println((String.format("%8s", login) + " | " + date + " | " + String.format("%7s", score) + " | " + String.format("%8s", time)).length());
         return String.format("%8s", login) + " | " + date + " | " + String.format("%8s", score) + " | " + String.format("%12s", time);
     }
 }

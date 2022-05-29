@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.TimeZone;
 
 import static javax.swing.JOptionPane.showMessageDialog;
@@ -15,7 +16,7 @@ public class MainFrame extends JFrame {
     JRadioButton second;
     ButtonWImage start, top;
     // Уже бывавшие в использовании сервера закрытые порты.
-    private ArrayList<Integer> usedPorts = new ArrayList<>();
+    private final ArrayList<Integer> usedPorts = new ArrayList<>();
 
     /**
      * Мейн метод, с которого начинается работа программы.
@@ -35,7 +36,7 @@ public class MainFrame extends JFrame {
     public void Init() {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         try {
-            setIconImage(ImageIO.read(MainFrame.class.getResource("/icons/black.png")));
+            setIconImage(ImageIO.read(Objects.requireNonNull(MainFrame.class.getResource("/icons/black.png"))));
         } catch (Exception ignored) {
         }
 
@@ -45,12 +46,12 @@ public class MainFrame extends JFrame {
         setLayout(new GridBagLayout());
         GridBagConstraints cons = new GridBagConstraints();
 
-        JLabel ipLabel, portLabel, timeLabel;
+        JLabel timeLabel;
 
         cons.anchor = GridBagConstraints.NORTHWEST;
         cons.insets = new Insets(5, 10, 5, 5);
         cons.gridx = 1;
-        add(ipLabel = new JLabel("IP:   "), cons);
+        add(new JLabel("IP:   "), cons);
 
         cons.gridx = 2;
         add(ip = new JTextArea(), cons);
@@ -59,7 +60,7 @@ public class MainFrame extends JFrame {
 
         cons.gridx = 1;
         cons.gridy = 1;
-        add(portLabel = new JLabel("Port: "), cons);
+        add(new JLabel("Port: "), cons);
 
         cons.gridx = 2;
         add(port = new JTextArea(), cons);
@@ -80,9 +81,7 @@ public class MainFrame extends JFrame {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        top.addActionListener(e -> {
-            System.out.println("Data from derby DB:\n" + DataBaseConnection.getAllData());
-        });
+        top.addActionListener(e -> System.out.println("Data from derby DB:\n" + DataBaseConnection.getAllData()));
 
         cons.gridx = 0;
         cons.gridy = 3;
@@ -93,7 +92,7 @@ public class MainFrame extends JFrame {
         start.setToolTipText("Start server");
         start.addActionListener(e -> {
             // Обработка контента текстовых полей.
-            int truePort = -1, trueTime = -1;
+            int truePort, trueTime;
             try {
                 truePort = Integer.parseInt(port.getText());
             } catch (Exception ex) {
@@ -134,9 +133,7 @@ public class MainFrame extends JFrame {
         cons.gridy = 4;
         second = new JRadioButton("second player");
         add(second, cons);
-        second.addActionListener(e -> {
-            Server.secondPlayer = second.isSelected();
-        });
+        second.addActionListener(e -> Server.secondPlayer = second.isSelected());
 
         cons.gridy = 3;
         time = new JTextArea();
