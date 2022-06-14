@@ -81,7 +81,11 @@ public class MainFrame extends JFrame {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        top.addActionListener(e -> System.out.println("Data from derby DB:\n" + DataBaseConnection.getAllData()));
+        top.addActionListener(e -> {
+            DataBasePlayersList list = new DataBasePlayersList(this,DataBaseConnection.getAllData().split("\n"));
+
+            System.out.println("Data from derby DB:\n" + DataBaseConnection.getAllData());
+        });
 
         cons.gridx = 0;
         cons.gridy = 3;

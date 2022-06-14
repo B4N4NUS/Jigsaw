@@ -41,7 +41,6 @@ public class DataBaseConnection {
             DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
             df.setTimeZone(TimeZone.getTimeZone("Среднее время по Гринвичу"));
-            System.out.println(df.getTimeZone().getDisplayName());
 
             System.out.println("[DB] Date and time in UTC-0: " + df.format(date));
             connection.createStatement().execute("insert into highscores values" + "('" + UUID.randomUUID() +
@@ -65,12 +64,13 @@ public class DataBaseConnection {
         ArrayList<Data> table = new ArrayList<>();
         Data dummy = new Data();
 
+        // Пока в БД есть непрочитанные данные.
         while (resultSet.next()) {
             dummy.id = resultSet.getString(1);
             dummy.login = resultSet.getString(2);
             dummy.date = resultSet.getString(3);
             if (timeZone != null) {
-
+                // Парсим время в нужный часовой пояс.
                 Date trueDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(dummy.date);
                 DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 df.setTimeZone(TimeZone.getTimeZone(timeZone));
@@ -149,18 +149,14 @@ class Data implements Comparator<Data> {
         try {
             Date dateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(f.date);
             Date dateTime2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(s.date);
-            // Сравниваем по времени.
-            if (dateTime.equals(dateTime2)) {
-                // Сравниваем по времени игры.
+            // Сравниваем счет.
+            if (f.score == s.score) {
+                // Сравниваем по длительности игры.
                 if (f.time == s.time) {
-                    // Сравниваем по очкам.
-                    if (f.score > s.score) {
-                        return -1;
-                    } else {
-                        return 1;
-                    }
+                    // Сравниваем по времени проведения игры.
+                    return dateTime.compareTo(dateTime2);
                 } else {
-                    // Сравниваем по времени игры.
+                    // Сравниваем по длительности игры.
                     if (f.time > s.time) {
                         return -1;
                     } else {
@@ -168,7 +164,10 @@ class Data implements Comparator<Data> {
                     }
                 }
             } else {
-                return -1 * dateTime.compareTo(dateTime2);
+                if (f.score > s.score) {
+                    return -1;
+                }
+                return 1;
             }
         } catch (Exception ex) {
             ex.printStackTrace();

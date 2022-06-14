@@ -1,12 +1,14 @@
 import javax.swing.*;
 import java.io.*;
 import java.net.*;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.Timer;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
+/**
+ * Класс, реализующий связь между сервером и клиентами.
+ */
 public class Server extends Thread {
     private final int port;
     private final int timeout = 20;
@@ -55,8 +57,6 @@ public class Server extends Thread {
      */
     @Override
     public void run() {
-
-
         try {
             // Проверяем открытость и неизменность порта.
             if (serverSocket == null) {
@@ -69,7 +69,6 @@ public class Server extends Thread {
                 }
             }
             gui.ip.setText(String.valueOf(InetAddress.getLocalHost()).split("/")[1]);
-            System.out.println(serverSocket.getInetAddress());
 
             // Генерируем массив фигур для передачи игрокам.
             Random random = new Random();
@@ -87,9 +86,9 @@ public class Server extends Thread {
 
 
             Thread first = new Thread(() -> {
+                // Ждем подключение клиента и отправляем ему пинг-понг пакет.
                 try {
                     firstSocket = serverSocket.accept();
-                    System.out.println(serverSocket.getInetAddress());
                     writeToClient("-");
                     firstLost = false;
                 } catch (IOException e) {
@@ -113,15 +112,16 @@ public class Server extends Thread {
                         while (in.ready()) {
                             System.out.println("[P1] Buffer:");
                             buf.add(in.readLine());
-                            System.out.println(buf.get(buf.size() - 1));
                             if (buf.get(buf.size() - 1).equals("-")) {
                                 System.out.println("[P1] Got ping-pong");
                                 writeToClient("-");
                             }
                         }
 
+                        // Рассматриваем инфу в буфере.
                         for (String s : buf) {
                             switch (s.charAt(0)) {
+                                // Получен пакет об установки предыдущей фигуры.
                                 case '0' -> {
                                     while (!startReceiving) {
                                         System.out.print("");
@@ -129,12 +129,13 @@ public class Server extends Thread {
                                     writeToClient("0 " + figs[firstIndex++]);
                                     System.out.println("[P1] Gave new fig (" + figs[firstIndex - 1] + ")");
                                 }
+                                // Получено имя игрока.
                                 case '1' -> {
                                     firstName = s.split(" ")[1];
                                     System.out.println("[P1] Got name (" + firstName + ")");
                                     writeToClient("6 " + gui.time.getText());
                                 }
-
+                                // Получено сообщение о готовности игрока.
                                 case '2' -> {
                                     firstReady = true;
                                     System.out.println("[P1] " + firstName + " ready!");
@@ -147,6 +148,7 @@ public class Server extends Thread {
                                         startReceiving = true;
                                     }
                                 }
+                                // Получено подтверждение о завершении игры игроком.
                                 case '3' -> {
                                     System.out.println("[P1] " + firstName + " ended game!");
                                     if (secondPlayer) {
@@ -155,7 +157,9 @@ public class Server extends Thread {
                                     firstLost = true;
                                     running = false;
                                 }
+                                // Получение информации о временной зоне игрока.
                                 case '5' -> firstTimeZone = s.substring(2);
+                                // Получение запроса на передачу информации о топе игроков.
                                 case '9' -> {
                                     writeToClient("9 " + DataBaseConnection.getDataForClient(firstTimeZone));
                                     System.out.println("[P1] Sent top games");
@@ -165,8 +169,10 @@ public class Server extends Thread {
                     } catch (Exception ignored) {
                     }
                 }
+                // Конец работы потока-обработчика сообщений игрока.
                 System.out.println("[P1] Thread ended");
             });
+            // Данный поток слабо отличается от первого, поэтому остается без комментариев.
             Thread second = new Thread(() -> {
                 try {
                     secondSocket = serverSocket.accept();
@@ -179,17 +185,14 @@ public class Server extends Thread {
 
                 while (running) {
                     try {
-                        // Если второй игрок отключился.
                         if (firstLost) {
                             firstLost = false;
                             writeToClient2("4 second player is dead lol");
                         }
 
-                        // Начинаем читать информацию из сокета.
                         BufferedReader in = new BufferedReader(new InputStreamReader(secondSocket.getInputStream()));
                         ArrayList<String> buf = new ArrayList<>();
 
-                        // Получаем всю информацию.
                         while (in.ready()) {
                             System.out.println("[P2] Buffer:");
                             buf.add(in.readLine());
@@ -244,6 +247,7 @@ public class Server extends Thread {
 
             // Таймер конца игры.
             Timer timer = new Timer("timer");
+            // Задача, сохраняющая информацию об игре в БД и завершающая все потоки игроков.
             TimerTask task = new TimerTask() {
                 @Override
                 public void run() {
@@ -278,6 +282,7 @@ public class Server extends Thread {
                     cancel();
                 }
             };
+            // Задача, стартующая игру.
             TimerTask startTimer = new TimerTask() {
                 @Override
                 public void run() {
@@ -290,19 +295,18 @@ public class Server extends Thread {
                 }
             };
 
-            // Таймер таймаута сервера.
+            // Задача, контролирующая таймаута сервера.
             TimerTask stopServer = new TimerTask() {
                 @Override
                 public void run() {
                     System.out.println("Stopping server");
                     if (!(!secondPlayer & firstReady || firstReady & secondReady)) {
-                        running = false;
-                        System.out.println(secondIndex + " " + firstIndex);
                         showMessageDialog(gui, "Server waited for " + timeout + " seconds\nBut game was not started", "Error", JOptionPane.WARNING_MESSAGE);
                         writeToClient("5 dead");
                         if (secondName != null) {
                             writeToClient2("5 dead");
                         }
+                        running = false;
                     }
                     cancel();
                 }
@@ -328,7 +332,7 @@ public class Server extends Thread {
             // Убиваем таймер таймаута.
             timerStop.cancel();
 
-            // Обнуляем все поля.
+            // Обнуляем все задействованные поля.
             System.out.println("Server closed");
             firstName = null;
             secondName = null;
