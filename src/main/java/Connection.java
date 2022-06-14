@@ -39,6 +39,9 @@ public class Connection extends Thread {
         this.ipAddress = ipAddress;
     }
 
+    /**
+     * Метод, заканчивающий игровую сессию.
+     */
     public void gameEnded() {
         writeToServer("3 stopped game");
         playing = false;
@@ -51,7 +54,9 @@ public class Connection extends Thread {
         }
     }
 
-
+    /**
+     * Метод, выводящий топ игроков пользователю.
+     */
     public void getTop() {
         if (socket != null) {
             if (!socket.isClosed()) {
@@ -62,17 +67,21 @@ public class Connection extends Thread {
         showMessageDialog(null, "Cant connect to server", "Error", ERROR_MESSAGE);
     }
 
+    /**
+     * Метод, обрабатывающий интеракции с сервером.
+     */
     public void workWithServer() {
         System.out.println("Working with server...");
 
         Thread worker = new Thread(() -> {
+            // Вайл крутится, пока сокет живой.
             while (running) {
                 try {
                     // Проверка пульса сокета.
                     if (socket.isClosed()) {
                         break;
                     }
-                    // Поток записи на сервер.
+
                     BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                     ArrayList<String> buf = new ArrayList<>();
 
@@ -81,13 +90,15 @@ public class Connection extends Thread {
                         buf.add(in.readLine());
                         System.out.println("Pre Game Buffer: " + buf.get(buf.size() - 1));
                     }
-                    // Обрабатываем полученные данные.
+                    // Обрабатываем полученные с сервера данные.
                     for (String s : buf) {
                         switch (s.charAt(0)) {
+                            // Получено максимальное время игры.
                             case '6' -> {
                                 System.out.println("Got game time: " + s.split(" ")[1]);
                                 owner.maxTime = s.split(" ")[1];
                             }
+                            // Получено сообщение об отключении сервера.
                             case '5' -> {
                                 playing = false;
                                 running = false;
@@ -100,16 +111,17 @@ public class Connection extends Thread {
                                     e.printStackTrace();
                                 }
                             }
+                            // Получено имя противника.
                             case '7' -> {
                                 enemy = s.split(" ")[1];
                                 System.out.println("Got enemy name: " + enemy);
                             }
+                            // Получен топ игроков.
                             case '9' -> {
                                 String rawTop = s.substring(2);
                                 if (rawTop.equals("null")) {
                                     showMessageDialog(null, "There are no recordings yet", "Info", JOptionPane.INFORMATION_MESSAGE);
                                 } else {
-                                    System.out.println(rawTop);
                                     String[] mediumRareTop = rawTop.split("\b");
                                     new TopDialog(owner, mediumRareTop);
                                 }
@@ -124,7 +136,7 @@ public class Connection extends Thread {
                     break;
                 }
 
-
+                // Вайл крутится, пока идет игра.
                 while (playing) {
                     try {
                         // Проверка пульса сокета.
@@ -143,10 +155,12 @@ public class Connection extends Thread {
                         // Обрабатываем полученные данные.
                         for (String s : buf) {
                             switch (s.charAt(0)) {
+                                // Получена новая фигура.
                                 case '0' -> {
                                     figIndex = Integer.parseInt(s.split(" ")[1]);
                                     System.out.println("new fig index " + figIndex);
                                 }
+                                // Получена информация об отключении соперника.
                                 case '4' -> {
                                     System.out.println("Second player disconnected ");
                                     playing = false;
@@ -154,6 +168,7 @@ public class Connection extends Thread {
                                     owner.bStartStop.doClick();
                                     showMessageDialog(owner, "Your opponent disconnected\nYOU WON!", "Congratulation!", JOptionPane.INFORMATION_MESSAGE);
                                 }
+                                // Получены результаты игры.
                                 case '5' -> {
                                     System.out.println("got game results");
                                     playing = false;
@@ -181,6 +196,7 @@ public class Connection extends Thread {
                                         }
                                     }
                                 }
+                                // Получено имя противнива.
                                 case '7' -> {
                                     enemy = s.split(" ")[1];
                                     System.out.println("Got enemy name: " + enemy);
@@ -195,6 +211,7 @@ public class Connection extends Thread {
                     }
                 }
             }
+            // Завершение потока.
             System.out.println("Connection lost");
         });
         worker.start();
@@ -210,6 +227,7 @@ public class Connection extends Thread {
      * @throws IOException - кидает эксепшены при закрытом сокете.
      */
     public void openSocket() throws IOException {
+        // Если старый сокет закрыт или не существует, создаем новый.
         if (socket == null || socket.isClosed()) {
             socket = new Socket(ipAddress, port);
         } else {
@@ -219,6 +237,8 @@ public class Connection extends Thread {
             }
         }
         socket.setSoTimeout(1000);
+
+        // Начинаем пинг-понг с сервером.
         writeToServer("-");
         long start = System.currentTimeMillis();
         ArrayList<String> buf = new ArrayList<>();
@@ -231,7 +251,9 @@ public class Connection extends Thread {
         if (buf.size() == 0) {
             throw new ConnectException("Server is not responding to ping-pong packet");
         }
+        // Заканчиваем пинг-понг с сервером.
 
+        // Скидываем серверу всю нужную информацию об игроке.
         writeToServer("1 " + name);
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         writeToServer("5 " + df.getTimeZone().getID());
@@ -239,6 +261,7 @@ public class Connection extends Thread {
         running = true;
         System.out.println("opened socket");
 
+        // Начинаем полноценно общаться с сервером.
         workWithServer();
     }
 

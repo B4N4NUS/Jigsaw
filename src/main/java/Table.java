@@ -74,24 +74,9 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
         try {
             owner.bStartStop.setEnabled(false);
             owner.connection.giveNewFig();
-            long start = System.currentTimeMillis();
-            while (owner.connection.figIndex == Figure.getFigIndex(fig) && start+5000 > System.currentTimeMillis()) {
+            // Блочии приложение, пока не получим фигуру от сервера.
+            while (owner.connection.figIndex == Figure.getFigIndex(fig)) {
                 System.out.print("");
-            }
-            if (start+5000 < System.currentTimeMillis()) {
-                owner.connection.playing = false;
-                owner.connection.running = false;
-                owner.changeVisibleElems(true);
-                //owner.bStartStop.doClick();
-
-                showMessageDialog(owner, "Lost connection with server!", "Eror", ERROR_MESSAGE);
-                try {
-                    owner.connection.closeSocket();
-                } catch (IOException e) {
-                    e.printStackTrace();
-
-                }
-                return;
             }
             owner.startTimer = true;
             owner.bStartStop.setEnabled(true);
@@ -109,6 +94,7 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
      * Метод остановки игры.
      */
     public void stopGame() {
+        // Обнуляем информацию об игре.
         try {
             owner.connection.figIndex = -1;
             fig = Figure.getBlankFigure();
@@ -284,7 +270,6 @@ public class Table extends JPanel implements MouseListener, MouseMotionListener 
                             System.out.print("");
                         }
                         if (start+500 < System.currentTimeMillis()) {
-                            System.out.println(System.currentTimeMillis() + " " + start);
                             owner.connection.playing = false;
                             owner.connection.running = false;
                             owner.changeVisibleElems(true);

@@ -65,11 +65,13 @@ public class ButtonWImage extends JButton {
                 assert g != null;
 
                 Graphics2D g2 = (Graphics2D) g.create();
+                // Меняем качество отрисовки.
                 RenderingHints qualityHints = new RenderingHints(RenderingHints.KEY_ANTIALIASING,
                         RenderingHints.VALUE_ANTIALIAS_ON);
                 qualityHints.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
                 g2.setRenderingHints(qualityHints);
 
+                // Рисуем кнопку.
                 g2.setPaint(new GradientPaint(new Point(0, 0), new Color(color.getRed(), color.getGreen(),
                         color.getBlue()), new Point(0, getHeight()), new Color(color.getRed(), color.getGreen(),
                         color.getBlue())));

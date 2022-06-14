@@ -33,7 +33,7 @@ public class MainFrame extends JFrame implements ActionListener {
 
     public String maxTime = null;
 
-    // Таймер, работающий каждую секунду и меняющий ЮИ.
+    // Таймер, работающий каждую секунду и меняющий имя программы в зависимости от действий пользователя.
     Timer timer = new Timer("Timer");
     TimerTask task = new TimerTask() {
         @Override
@@ -91,7 +91,6 @@ public class MainFrame extends JFrame implements ActionListener {
         setSize(new Dimension(650, 450));
         setLayout(null);
 
-
         timer.schedule(task, 0, 1000L);
 
         buttonsPane = new JPanel();
@@ -140,7 +139,7 @@ public class MainFrame extends JFrame implements ActionListener {
         table.setPreferredSize(new Dimension(prefX * 11, prefY * 9));
         add(table);
         add(Box.createVerticalStrut(1));
-        table.setBounds((int) Math.round(1.0*getWidth() / 2 - prefX * 4.5), (int) Math.round(1.0*getHeight() / 2 - prefY * 4.5), prefX * 15, prefY * 11);
+        table.setBounds((int) Math.round(1.0 * getWidth() / 2 - prefX * 4.5), (int) Math.round(1.0 * getHeight() / 2 - prefY * 4.5), prefX * 15, prefY * 11);
         add(Box.createVerticalStrut(1));
 
         setLocationRelativeTo(null);
@@ -171,6 +170,11 @@ public class MainFrame extends JFrame implements ActionListener {
         System.exit(0);
     }
 
+    /**
+     * Метод, меняющий текущий вид ЮИ.
+     *
+     * @param startingScreen - показывать ли стартовое окно приложения.
+     */
     public void changeVisibleElems(boolean startingScreen) {
         if (startingScreen) {
             buttonsPane.setVisible(false);
@@ -196,14 +200,12 @@ public class MainFrame extends JFrame implements ActionListener {
                 if (firstGame) {
                     firstGame = false;
                 } else {
-                    try {
-                        System.out.println("Opened new socket");
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
+                    System.out.println("Opened new socket");
                 }
+                // Говорим серверу о своей готовности.
                 connection.writeToServer("2 ready");
                 connection.playing = true;
+                // Начинаем игру.
                 table.startGame();
                 bStartStop.state = !bStartStop.state;
                 bStartStop.setActionCommand("stop_game");

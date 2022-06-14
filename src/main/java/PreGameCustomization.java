@@ -6,6 +6,9 @@ import java.util.Random;
 import static javax.swing.JOptionPane.ERROR_MESSAGE;
 import static javax.swing.JOptionPane.showMessageDialog;
 
+/**
+ * Класс, являющийся панелью с заполняемыми полями для подключения к серверу.
+ */
 public class PreGameCustomization extends JPanel {
     MainFrame gui;
     public JTextArea name, port, ip;
@@ -72,10 +75,12 @@ public class PreGameCustomization extends JPanel {
         connect.setPreferredSize(new Dimension(75,75));
         connect.addActionListener(e-> {
             try {
+                // Пробуем открыть сокет.
                 gui.connection = new Connection(port.getText(), name.getText(),ip.getText(), gui);
                 gui.connection.openSocket();
                 gui.changeVisibleElems(false);
             }catch (ConnectException ex) {
+                // Если не удается подключиться, оповещаем пользователя.
                 showMessageDialog(null, "Cant connect to server", "Error", ERROR_MESSAGE);
             }
             catch (Exception ex) {

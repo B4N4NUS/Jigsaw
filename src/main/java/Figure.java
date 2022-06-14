@@ -158,6 +158,11 @@ public class Figure {
             }
     };
 
+    /**
+     * Метод, возвращающий индекс фигуры по переданной фигурею
+     * @param fig - фигура.
+     * @return - индекс фигуры.
+     */
     public static int getFigIndex(int[][] fig) {
         for(int i = 0; i < figures.length; i++) {
             if (figures[i] == fig) {
